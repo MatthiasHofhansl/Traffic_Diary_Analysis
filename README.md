@@ -2,6 +2,7 @@
 
 
 
+
 ## Descriptionss
 The **Traffic_Diary_Analysis_Tool** is a Python-based program designed to save and analyze travel routes taken by individuals. Users can input details about their journeys, such as:
 
