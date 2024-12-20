@@ -1,0 +1,122 @@
+Liebe Studenten,
+
+wie bereits in der Vorlesung angekündigt, dürft ihr ab
+nächster Woche mit eurem Abschlussprojekt beginnen. Ihr
+könnt das Projekt in Zweiergruppen durchführen. Bitte
+teilt mir eure Gruppenzusammensetzung bis spätestens zur
+Vorlesung am 17.12.2024 mit. Alternativ könnt ihr mir die
+Informationen auch per E-Mail zukommen lassen.
+Falls jemand das Projekt alleine durchführen möchte, ist
+das ebenfalls möglich, solange die Anzahl der
+Einzelprojekte überschaubar bleibt. Diese Mitteilung gilt
+als inoffizielle Prüfungsanmeldung. Da einige Kommilitonen
+aus dem Studiengang ausgeschieden sind, kann ich nur
+diejenigen berücksichtigen, die sich bei mir anmelden.
+
+ Anforderungen an das Projekt
+
+ 1. Technische Anforderungen
+- Ihr müsst mindestens eine neue Bibliothek verwenden, die
+wir in der Vorlesung nicht behandelt haben. Hier sind einige
+Vorschläge:
+  - tkinter: Für GUI-Entwicklung und Bedienoberflächen.
+  - numpy: Für mathematische Berechnungen und
+Code-Beschleunigung.
+  - pygame: Für dynamische Visualisierungen.
+  - geopandas: Für die Analyse und Verarbeitung von
+Geodaten.
+  - scikit-learn: Für maschinelles Lernen, z. B. zur
+Verkehrsprognose.
+  - folium: Für interaktive Karten.
+  - requests: Für den Zugriff auf externe APIs, z. B.
+Verkehrsdaten in Echtzeit.
+  - shapely: Für geometrische Berechnungen, z. B. Routen
+und Strecken.
+  - dash: Für die Entwicklung interaktiver Web-Dashboards.
+
+  - flask oder fastapi: Für die Erstellung von
+Webanwendungen.
+
+
+ 2. Thematische Anforderungen
+Das Projekt muss sich mit einem spezifischen Problem oder
+Konzept aus dem Bereich Verkehr befassen und eine Lösung
+dafür bieten. Dabei wird auch der fachliche Nutzen der
+Anwendung berücksichtigt.
+
+Beispiele für Themen:
+- Simulation von Verkehrsströmen oder Stauverhalten mit
+Zellularautomaten.
+- Optimierung von Routen für Fahrzeuge oder öffentliche
+Verkehrsmittel.
+- Visualisierung von Verkehrsdaten oder Geodaten.
+- Erstellung einer Fahrplanauskunft.
+- Simulation einer Kreuzung mit verschiedenen Ampelphasen.
+- Prognosen für den Verkehr basierend auf historischen
+Daten.
+
+ 3. Zusätzliche Anforderungen
+1. Komplexität:
+   - Das Projekt sollte mindestens zwei
+Programmierparadigmen (z. B. objektorientiert und
+funktional) verwenden.
+
+2. Interaktivität:
+   - Das Programm sollte möglichst intuitiv bedient werden
+können. Es sollte also entweder über die cmd oder eine
+Benutzeroberfläche bedienbar sein.  Alternativ ist eine
+übersichtliche Bedienung über eine IDE ebenfalls möglich.
+
+3. Datenquellen:
+   - Nutzt externe Datenquellen oder erstellt eigene
+Datensätze.
+
+   Ideen für Datenquellen:
+   - Unfallatlas
+   - Pendleratlas
+   - OpenStreetMap
+   - GTFS-Daten (General Transit Feed Specification)
+   - Deutsche Bahn API
+
+4. Dokumentation:
+   - Erstellt eine klare Projektdokumentation, die Ziele,
+Technologien und euren Lösungsansatz beschreibt.
+
+5. Teamarbeit:
+   - Arbeitet mit einem Versionskontrollsystem (z. B.
+GitHub), sodass eure Zusammenarbeit nachvollziehbar ist.
+
+6. Umfang:
+   - Das Programm sollte pro Teammitglied einen Umfang von
+ca. 500 Zeilen Code haben (inklusive Kommentaren und
+Leerzeilen).
+
+ 4. Abgabe und Präsentation
+- Präsentation:
+  - Am Ende des Semesters stellt ihr euer Projekt in einer
+kurzen Präsentation (ca. 5-10 Minuten) vor.
+  - Dabei demonstriert ihr eure Lösung und erklärt die
+wichtigsten Funktionen.
+  - Im Anschluss findet ein Fachgespräch (ca. 10 Minuten)
+statt, bei dem ihr eure Kenntnisse in Python und euren Code
+erklären müsst.
+
+- Abgabetermin:
+  - Die Abgabe erfolgt bis zum 06.01.2025 um 00:00 Uhr in
+Ilias.
+  - Der Abgabeordner wird rechtzeitig bekannt gegeben.
+
+- Fragen und Feedback:
+  - Am 02.01.2025 und 03.01.2025 biete ich euch
+Online-Termine an, um eventuelle Fragen zu klären oder
+Feedback zu eurem Projekt zu geben.
+
+ Bewertung
+Die genauen Bewertungskriterien und Gewichtungen werde ich
+euch in der nächsten Vorlesung vorstellen.
+
+Ich freue mich auf eure kreativen Ideen und stehe bei Fragen
+oder Unsicherheiten jederzeit zur Verfügung!
+
+Mit freundlichen Grüßen,
+Sven Kuder
