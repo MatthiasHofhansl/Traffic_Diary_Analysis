@@ -1,31 +1,4 @@
-Liebe Studenten,
 
-anbei nochmal die gestern festgehaltenen Projekte von euch,
-welche ihr umsetzen müsst, um zu bestehen. Bitte lest
-nochmal drüber, damit wir uns alle einig sind und es nicht
-hinterher zu Problemen kommt.
-
-Ich habe euch die Bewertungsaufteilung in Vorlesung 11 auf
-ILIAS gepackt.
-
-Noch einen HINWEIS AN ALLE ÖPNV ROUTING PROJEKTE:
-im Rahmen des Projekts können Sie sich auf das einfache
-Routing beschränken. Ihre Aufgabe ist es, Routen innerhalb
-einer einzelnen Linie ohne Umstiege zu berechnen, also von
-einer Start- zur Ziel-Haltestelle.
-Warum sind Umstiege so kompliziert?
-Routing mit Umstiegen ist komplex, da zeitabhängige
-Verbindungen, Wartezeiten und Mindestumsteigezeiten
-berücksichtigt werden müssen. Außerdem erfordert es
-Algorithmen, die mehrere Linien kombinieren und eine
-effiziente Suche über große Datensätze durchführen.
-Umstiege könnten z. B. mit speziellen Algorithmen wie
-RAPTOR oder dem Connection Scan Algorithm umgesetzt werden.
-Falls Sie interessiert sind, können Sie dies gerne als
-zusätzliche Herausforderung umsetzen – es ist jedoch
-nicht verpflichtend.
-
-Themen:
 Gruppe 5 Matthias Hofhansl, Paul Rösch:
  Entwicklung einer grafischen Oberfläche zur Erfassung von
 Wegetagebüchern. Die App bietet eine Umfrageoberfläche
