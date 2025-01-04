@@ -666,6 +666,7 @@ class TrafficDiaryApp:
         minute_entry = ttk.Entry(time_frame, textvariable=minute_var, width=2)
         minute_entry.grid(row=0, column=4, padx=2, pady=5)
 
+        # Bestätigungs-Logik
         def confirm_time(event=None):
             h = hour_var.get()
             m = minute_var.get()
@@ -687,7 +688,14 @@ class TrafficDiaryApp:
             variable.set(time_str)
             top.destroy()
 
+        # Enter-Taste zum Bestätigen
         top.bind("<Return>", confirm_time)
+
+        # NEU: OK-Button zum Bestätigen
+        ttk.Button(time_frame, text="OK", command=confirm_time).grid(
+            row=1, column=0, columnspan=5, pady=8
+        )
+
         hour_entry.focus()
 
     # --------------------------------------------------
@@ -893,7 +901,7 @@ class TrafficDiaryApp:
         if os.path.exists(DATA_FILE):
             os.remove(DATA_FILE)
         
-        # NEU: Alle Dateien im Ordner CHART_DIRECTORY löschen
+        # Alle Dateien im Ordner CHART_DIRECTORY löschen
         if os.path.exists(CHART_DIRECTORY):
             for filename in os.listdir(CHART_DIRECTORY):
                 file_path = os.path.join(CHART_DIRECTORY, filename)
