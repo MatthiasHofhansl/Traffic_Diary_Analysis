@@ -43,15 +43,12 @@ def parse_or_reverse_geocode(s):
     Ist es Koordinate (lat, lon) -> Reverse-Geocoding.
     Sonst -> Forward-Geocoding.
     """
-    # Falls Komma vorhanden, versuchen wir "lat, lon" zu parsen
     if "," in s:
         try:
             lat_str, lon_str = s.split(",")
             lat = float(lat_str.strip())
             lon = float(lon_str.strip())
-            # Reverse-Geocoding: aus Koordinaten Adresse bekommen
             location = geolocator.reverse((lat, lon))
-            # location kann None sein, falls kein Eintrag gefunden
             if location:
                 return (lat, lon)
             else:
@@ -287,16 +284,13 @@ class TrafficDiaryApp:
         self.tooltip_window_mode = tk.Toplevel(self.root)
         self.tooltip_window_mode.wm_overrideredirect(True)
 
-        # Position (x, y) leicht unterhalb des Fragezeichens
         x = event.x_root
         y = event.y_root + 20
         self.tooltip_window_mode.geometry(f"+{x}+{y}")
 
-        # Rahmen um den Tooltip
         table_frame = tk.Frame(self.tooltip_window_mode, background="white", relief="solid", borderwidth=1)
         table_frame.pack()
 
-        # Kopfzeile fett
         header_text = f"{'Verkehrsmittel':<15}{'Hierzu gehören':<40}"
         header_label = tk.Label(
             table_frame,
@@ -307,7 +301,6 @@ class TrafficDiaryApp:
         )
         header_label.pack(anchor="w", padx=5, pady=(5, 2))
 
-        # Körper normal
         body_text = (
             f"{'Fahrrad':<15}Pedelec, Lastenrad, E-Scooter, Cityroller etc.\n"
             f"{'Fuß':<15}\n"
@@ -326,7 +319,6 @@ class TrafficDiaryApp:
         body_label.pack(anchor="w", padx=5, pady=(0, 5))
 
     def hide_mode_tooltip(self, event):
-        """Tooltip-Fenster schließen, wenn der Mauszeiger das Fragezeichen (Verkehrsmittel) verlässt."""
         if self.tooltip_window_mode is not None:
             self.tooltip_window_mode.destroy()
             self.tooltip_window_mode = None
@@ -335,24 +327,19 @@ class TrafficDiaryApp:
     #  Tooltip-Methoden für Wegezweck (zweites Fragezeichen)
     # --------------------------------------------------
     def show_purpose_tooltip(self, event):
-        """Tooltip für den Wegezweck (zweites Fragezeichen)."""
         if self.tooltip_window_purpose is not None:
             return  # Schon offen
 
-        # Toplevel-Fenster ohne Rahmen
         self.tooltip_window_purpose = tk.Toplevel(self.root)
         self.tooltip_window_purpose.wm_overrideredirect(True)
 
-        # Position (x, y) leicht unterhalb des Fragezeichens
         x = event.x_root
         y = event.y_root + 20
         self.tooltip_window_purpose.geometry(f"+{x}+{y}")
 
-        # Rahmen um den Tooltip
         table_frame = tk.Frame(self.tooltip_window_purpose, background="white", relief="solid", borderwidth=1)
         table_frame.pack()
 
-        # Kopfzeile fett
         header_text = f"{'Wegezweck':<12}{'Beispiel'}"
         header_label = tk.Label(
             table_frame,
@@ -363,7 +350,6 @@ class TrafficDiaryApp:
         )
         header_label.pack(anchor="w", padx=5, pady=(5, 2))
 
-        # Körper normal
         body_text = (
             f"{'Arbeit':<12}Weg zur Arbeitsstätte\n"
             f"{'Ausbildung':<12}Zur Universität, zur Schule etc.\n"
@@ -385,7 +371,6 @@ class TrafficDiaryApp:
         body_label.pack(anchor="w", padx=5, pady=(0, 5))
 
     def hide_purpose_tooltip(self, event):
-        """Tooltip-Fenster schließen, wenn der Mauszeiger das Fragezeichen (Wegezweck) verlässt."""
         if self.tooltip_window_purpose is not None:
             self.tooltip_window_purpose.destroy()
             self.tooltip_window_purpose = None
@@ -748,17 +733,12 @@ class TrafficDiaryApp:
             handle_error("Keine Daten zum Auswerten vorhanden.", self.message_label)
             return
 
-        # Optional sicherstellen, dass "Distanz (km)" wirklich numerisch ist
+        # Falls "Distanz (km)" nicht numerisch ist, konvertieren:
         df["Distanz (km)"] = pd.to_numeric(df["Distanz (km)"], errors="coerce")
 
         create_chart_directory()
 
-        # ---------------------------------------------------
-        # 1) Modal Split (Anzahl Wege in %)
-        # ---------------------------------------------------
-        ways_by_mode_percent = df["Modus"].value_counts(normalize=True) * 100
-
-        # Definiere Farbzuordnung für jedes Verkehrsmittel:
+        # --- Farbzuordnung für alle Diagramme ---
         color_map = {
             "MIV": "red",            # rot
             "MIV-Mitfahrer": "orange",
@@ -768,23 +748,26 @@ class TrafficDiaryApp:
             "Sonstiges": "pink"      # pink
         }
 
-        # Index des Series-Objekts (z.B. ["Fahrrad", "MIV", ...])
-        modes = ways_by_mode_percent.index
-        # Für jeden Modus die passende Farbe holen
-        colors = [color_map.get(m, "grey") for m in modes]
+        # ---------------------------------------------------
+        # 1) Modal Split (Anzahl Wege in %)
+        # ---------------------------------------------------
+        ways_by_mode_percent = df["Modus"].value_counts(normalize=True) * 100
 
         ways_chart_path = os.path.join(CHART_DIRECTORY, "modal_split_ways.png")
+
+        # Farben in der Reihenfolge der auftretenden Modi
+        ways_modes = ways_by_mode_percent.index
+        ways_colors = [color_map.get(m, "grey") for m in ways_modes]
 
         plt.figure(figsize=(6, 6))
         plt.pie(
             ways_by_mode_percent,
-            labels=modes,
+            labels=ways_modes,
             autopct="%.1f%%",
             startangle=140,
-            colors=colors
+            colors=ways_colors
         )
         plt.title("Modal Split Wege", fontsize=14, fontweight="bold")
-        # Hinweis unter dem Diagramm
         plt.figtext(0.5, 0.01, "Angaben in Prozent", ha="center", fontsize=10)
 
         plt.tight_layout()
@@ -792,7 +775,7 @@ class TrafficDiaryApp:
         plt.close()
 
         # ---------------------------------------------------
-        # 2) Modal Split (Kilometer in %)
+        # 2) Modal Split Personenkilometer
         # ---------------------------------------------------
         km_sum_by_mode = df.groupby("Modus")["Distanz (km)"].sum()
         total_km = km_sum_by_mode.sum()
@@ -803,12 +786,21 @@ class TrafficDiaryApp:
         km_by_mode_percent = (km_sum_by_mode / total_km) * 100
         km_chart_path = os.path.join(CHART_DIRECTORY, "modal_split_km.png")
 
-        plt.figure(figsize=(5, 5))
-        km_by_mode_percent.plot(
-            kind="pie", autopct="%.1f%%", startangle=140
+        # Farben in der Reihenfolge der auftretenden Modi (Kilometer)
+        km_modes = km_by_mode_percent.index
+        km_colors = [color_map.get(m, "grey") for m in km_modes]
+
+        plt.figure(figsize=(6, 6))
+        plt.pie(
+            km_by_mode_percent,
+            labels=km_modes,
+            autopct="%.1f%%",
+            startangle=140,
+            colors=km_colors
         )
-        plt.title("Modal Split (Kilometer in %)")
-        plt.ylabel("")
+        plt.title("Modal Split Personenkilometer", fontsize=14, fontweight="bold")
+        plt.figtext(0.5, 0.01, "Angaben in Prozent", ha="center", fontsize=10)
+
         plt.tight_layout()
         plt.savefig(km_chart_path)
         plt.close()
@@ -818,14 +810,14 @@ class TrafficDiaryApp:
         analysis_window.title("Analyse Ergebnisse: Modal Split")
 
         try:
-            # 1) Bild für Wege (Modal Split Wege)
+            # 1) Bild für Wege
             ways_img = Image.open(ways_chart_path)
             ways_photo = ImageTk.PhotoImage(ways_img)
             ways_label = tk.Label(analysis_window, image=ways_photo)
             ways_label.image = ways_photo
             ways_label.pack(side=tk.LEFT, padx=10, pady=10)
 
-            # 2) Bild für Kilometer (Modal Split km)
+            # 2) Bild für Personenkilometer
             km_img = Image.open(km_chart_path)
             km_photo = ImageTk.PhotoImage(km_img)
             km_label = tk.Label(analysis_window, image=km_photo)
