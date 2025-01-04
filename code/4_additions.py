@@ -7,13 +7,15 @@ from geopy.distance import geodesic
 from geopy.geocoders import MapBox
 from datetime import datetime
 
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Zum Anzeigen von PNG-Dateien in Tkinter
+# Wichtig bei manchen Tkinter-Setups auf Windows
+matplotlib.use("Agg")  # Damit kein zusätzliches Matplotlib-Fenster geöffnet wird
+
 from PIL import Image, ImageTk
 
-# Für die interaktive Karte
 # Bitte vorab installieren: pip install tkintermapview
 from tkintermapview import TkinterMapView
 
@@ -55,7 +57,6 @@ def parse_or_reverse_geocode(s):
                 return None
         except ValueError:
             pass
-
     loc = geolocator.geocode(s)
     if loc:
         return (loc.latitude, loc.longitude)
@@ -230,7 +231,6 @@ class TrafficDiaryApp:
         # -----------------------------------
         # Zeile 10: Auswerten-Button
         # -----------------------------------
-        # NEU: nicht direkt analyze_data, sondern open_analysis_options
         ttk.Button(root, text="Jetzt auswerten", command=self.open_analysis_options).grid(
             row=10, column=0, columnspan=2, padx=5, pady=10
         )
@@ -268,67 +268,56 @@ class TrafficDiaryApp:
         Öffnet ein neues Toplevel-Fenster, in dem man auswählen kann,
         welche Benutzer in die Analyse einfließen sollen.
         """
-
-        # Toplevel-Fenster
         options_window = tk.Toplevel(self.root)
         options_window.title("Auswertung anpassen: Benutzer-Auswahl")
 
-        # Frame für die Checkbuttons
         checks_frame = ttk.Frame(options_window)
         checks_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 
-        # Liste/Dic zum Speichern der Checkbutton-Variablen
         self.user_check_vars = {}
 
-        # Lade alle Nutzer aus USER_FILE (Vorname & Nachname),
-        # und erstelle für jeden einen Checkbutton
         if os.path.exists(USER_FILE):
             user_df = pd.read_csv(USER_FILE)
-            for index, row in user_df.iterrows():
+            for _, row in user_df.iterrows():
                 full_name = f"{row['Vorname']} {row['Nachname']}"
-                var = tk.BooleanVar(value=True)  # Standard: angehakt
+                var = tk.BooleanVar(value=True)
                 chk = ttk.Checkbutton(checks_frame, text=full_name, variable=var)
                 chk.pack(anchor="w", pady=2)
                 self.user_check_vars[full_name] = var
         else:
-            # Falls keine Benutzer-Datei existiert:
             tk.Label(checks_frame, text="Keine Benutzerdatei gefunden.").pack()
 
-        # Frame mit Buttons "Analyse starten" und "Abbrechen"
         btn_frame = ttk.Frame(options_window)
         btn_frame.pack(padx=10, pady=10, fill=tk.X)
 
         def start_analysis():
-            # Sammle alle Benutzer, die angehakt sind:
             selected_users = [
                 name for name, var_obj in self.user_check_vars.items() if var_obj.get()
             ]
             options_window.destroy()
-            # Rufe die Analyse mit gefilterten Benutzern auf
             self.analyze_data(selected_users)
 
         ttk.Button(btn_frame, text="Analyse starten", command=start_analysis).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="Abbrechen", command=options_window.destroy).pack(side=tk.LEFT, padx=5)
 
     # --------------------------------------------------
-    # Analyse und Diagramme (jetzt mit Filter-Option)
+    # Analyse und Diagramme (3 Diagramme, horizontales Layout + Scroll)
     # --------------------------------------------------
     def analyze_data(self, selected_users=None):
         """
         Führt die Datenanalyse durch.
         selected_users: Liste von Benutzer-Namen, die ausgewertet werden sollen
                         (z.B. ["Max Mustermann", "Lisa Müller", ...]).
-                        Ist None, werden alle genommen.
+                        Ist None oder leer, werden alle Personen ausgewertet.
         """
         df = load_csv(DATA_FILE)
         if df is None or df.empty:
             handle_error("Keine Daten zum Auswerten vorhanden.", self.message_label)
             return
 
-        # Optional Distanz numerisch
         df["Distanz (km)"] = pd.to_numeric(df["Distanz (km)"], errors="coerce")
 
-        # Falls bestimmte Benutzer gefiltert werden sollen:
+        # Benutzer-Filter
         if selected_users:
             df = df[df["Benutzer/in"].isin(selected_users)]
             if df.empty:
@@ -337,8 +326,8 @@ class TrafficDiaryApp:
 
         create_chart_directory()
 
-        # Farbzuordnung
-        color_map = {
+        # --- 1) Modal Split (Anzahl Wege in %) ---
+        color_map_mode = {
             "MIV": "red",
             "MIV-Mitfahrer": "orange",
             "Fuß": "lightskyblue",
@@ -346,11 +335,9 @@ class TrafficDiaryApp:
             "ÖV": "green",
             "Sonstiges": "pink"
         }
-
-        # --- 1) Modal Split (Anzahl Wege in %) ---
         ways_by_mode_percent = df["Modus"].value_counts(normalize=True) * 100
         ways_modes = ways_by_mode_percent.index
-        ways_colors = [color_map.get(m, "grey") for m in ways_modes]
+        ways_colors = [color_map_mode.get(m, "grey") for m in ways_modes]
 
         ways_chart_path = os.path.join(CHART_DIRECTORY, "modal_split_ways.png")
         plt.figure(figsize=(6, 6))
@@ -376,7 +363,7 @@ class TrafficDiaryApp:
 
         km_by_mode_percent = (km_sum_by_mode / total_km) * 100
         km_modes = km_by_mode_percent.index
-        km_colors = [color_map.get(m, "grey") for m in km_modes]
+        km_colors = [color_map_mode.get(m, "grey") for m in km_modes]
 
         km_chart_path = os.path.join(CHART_DIRECTORY, "modal_split_km.png")
         plt.figure(figsize=(6, 6))
@@ -393,22 +380,108 @@ class TrafficDiaryApp:
         plt.savefig(km_chart_path)
         plt.close()
 
-        # Ergebnis-Fenster
-        analysis_window = tk.Toplevel(self.root)
-        analysis_window.title("Analyse Ergebnisse: Modal Split")
+        # --- 3) Verkehrsaufkommen (Wege) ---
+        color_map_purpose = {
+            "Arbeit": "lightskyblue",
+            "Dienstlich": "blue",
+            "Ausbildung": "darkblue",
+            "Einkauf": "brown",  # "kastanienrot"
+            "Erledigung": "red",
+            "Freizeit": "yellow",
+            "Begleitung": "lightgreen"
+        }
+        wegezweck_counts = df["Wegezweck"].value_counts(normalize=True) * 100
+        wegezweck_list = wegezweck_counts.index
+        wegezweck_colors = [color_map_purpose.get(wz, "grey") for wz in wegezweck_list]
 
+        wegezweck_chart_path = os.path.join(CHART_DIRECTORY, "verkehrsaufkommen_wege.png")
+        plt.figure(figsize=(6, 6))
+        plt.pie(
+            wegezweck_counts,
+            labels=wegezweck_list,
+            autopct="%.1f%%",
+            startangle=140,
+            colors=wegezweck_colors
+        )
+        plt.title("Verkehrsaufkommen (Wege)", fontsize=14, fontweight="bold")
+        plt.figtext(0.5, 0.01, "Angaben in Prozent", ha="center", fontsize=10)
+        plt.tight_layout()
+        plt.savefig(wegezweck_chart_path)
+        plt.close()
+
+        # ---------------------------------------
+        # NEU: Scrollbares Fenster für die Diagramme
+        # ---------------------------------------
+        analysis_window = tk.Toplevel(self.root)
+        analysis_window.title("Analyse Ergebnisse: Modal Split und Verkehrsaufkommen")
+
+        # 1) Container Frame
+        container = ttk.Frame(analysis_window)
+        container.pack(fill=tk.BOTH, expand=True)
+
+        # 2) Canvas
+        canvas = tk.Canvas(container)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # 3) Scrollbar
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        # 4) Frame im Canvas, das die Diagramme enthält
+        diagrams_frame = ttk.Frame(canvas)
+        # Erzeugt ein Fenster im Canvas an Position (0,0)
+        canvas.create_window((0, 0), window=diagrams_frame, anchor="nw")
+
+        # 5) Funktion, um Scrollregion zu aktualisieren
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        diagrams_frame.bind("<Configure>", on_frame_configure)
+
+        # 6) Option: Scrollen mit dem Mausrad
+        # (Auf Windows: event.delta. Auf Linux: event.num=4 oder 5)
+        def _on_mousewheel(event):
+            # Windows / MacOS
+            if event.delta:
+                canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            else:
+                # Linux
+                if event.num == 4:
+                    canvas.yview_scroll(-1, "units")
+                elif event.num == 5:
+                    canvas.yview_scroll(1, "units")
+
+        # Events binden
+        diagrams_frame.bind("<MouseWheel>", _on_mousewheel)       # Windows
+        diagrams_frame.bind("<Button-4>", _on_mousewheel)         # Linux scroll up
+        diagrams_frame.bind("<Button-5>", _on_mousewheel)         # Linux scroll down
+
+        # ------------------------------
+        # Diagramme nebeneinander platzieren
+        # ------------------------------
         try:
+            # 1) Modal Split Wege
             ways_img = Image.open(ways_chart_path)
             ways_photo = ImageTk.PhotoImage(ways_img)
-            ways_label = tk.Label(analysis_window, image=ways_photo)
+            ways_label = tk.Label(diagrams_frame, image=ways_photo)
             ways_label.image = ways_photo
             ways_label.pack(side=tk.LEFT, padx=10, pady=10)
 
+            # 2) Modal Split Personenkilometer
             km_img = Image.open(km_chart_path)
             km_photo = ImageTk.PhotoImage(km_img)
-            km_label = tk.Label(analysis_window, image=km_photo)
+            km_label = tk.Label(diagrams_frame, image=km_photo)
             km_label.image = km_photo
             km_label.pack(side=tk.LEFT, padx=10, pady=10)
+
+            # 3) Verkehrsaufkommen (Wege)
+            wz_img = Image.open(wegezweck_chart_path)
+            wz_photo = ImageTk.PhotoImage(wz_img)
+            wz_label = tk.Label(diagrams_frame, image=wz_photo)
+            wz_label.image = wz_photo
+            wz_label.pack(side=tk.LEFT, padx=10, pady=10)
 
         except Exception as e:
             handle_error(f"Fehler beim Laden der Diagramme: {e}", self.message_label)
@@ -481,7 +554,7 @@ class TrafficDiaryApp:
         user_window.bind("<Return>", save_user)
 
     # --------------------------------------------------
-    # Tooltip-Methoden
+    # Tooltip-Methoden für Verkehrsmittel / Wegezweck
     # --------------------------------------------------
     def show_mode_tooltip(self, event):
         if self.tooltip_window_mode is not None:
