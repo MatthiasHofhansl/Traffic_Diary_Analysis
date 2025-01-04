@@ -54,10 +54,8 @@ def parse_or_reverse_geocode(s):
             else:
                 return None
         except ValueError:
-            # Parsing fehlgeschlagen -> normal geocoden
             pass
 
-    # Standard: Forward-Geocoding (Adresssuche)
     loc = geolocator.geocode(s)
     if loc:
         return (loc.latitude, loc.longitude)
@@ -66,18 +64,14 @@ def parse_or_reverse_geocode(s):
 
 def calculate_distance(start_point, end_point):
     """
-    Berechnet die Distanz (in km) zwischen zwei Adressen/Koordinaten
-    (start_point, end_point) mithilfe von geopy.
+    Berechnet die Distanz (in km) zwischen zwei Adressen/Koordinaten.
     """
     try:
         start_coords = parse_or_reverse_geocode(start_point)
         end_coords = parse_or_reverse_geocode(end_point)
-
         if not start_coords or not end_coords:
             return None
-
         return geodesic(start_coords, end_coords).kilometers
-
     except:
         return None
 
@@ -118,10 +112,8 @@ class TrafficDiaryApp:
         self.user_menu = ttk.Combobox(root, textvariable=self.user_var, state="readonly")
         self.user_menu.grid(row=0, column=1, padx=5, pady=5)
 
-        # Benutzer in die Combobox laden
         self.load_users()
 
-        # Button zum Hinzufügen neuer Benutzer
         ttk.Button(root, text="Neue/n Benutzer/in anlegen", command=self.add_new_user).grid(
             row=0, column=2, padx=5, pady=5
         )
@@ -173,7 +165,6 @@ class TrafficDiaryApp:
         self.start_point_var = tk.StringVar()
         self.start_point_entry = ttk.Entry(root, textvariable=self.start_point_var)
         self.start_point_entry.grid(row=5, column=1, padx=5, pady=5)
-        # Klick ins Feld -> Karte für Startpunkt
         self.start_point_entry.bind("<Button-1>", self.open_map_for_startpoint)
 
         # -----------------------------------
@@ -183,11 +174,10 @@ class TrafficDiaryApp:
         self.end_point_var = tk.StringVar()
         self.end_point_entry = ttk.Entry(root, textvariable=self.end_point_var)
         self.end_point_entry.grid(row=6, column=1, padx=5, pady=5)
-        # Klick ins Feld -> Karte für Endpunkt
         self.end_point_entry.bind("<Button-1>", self.open_map_for_endpoint)
 
         # -----------------------------------
-        # Zeile 7: Verkehrsmittel (+ Fragezeichen #1)
+        # Zeile 7: Verkehrsmittel
         # -----------------------------------
         ttk.Label(root, text="Verkehrsmittel:").grid(row=7, column=0, padx=5, pady=5)
         self.mode_var = tk.StringVar(value="")
@@ -205,13 +195,11 @@ class TrafficDiaryApp:
         self.tooltip_window_mode = None
         self.question_mark_label_mode = ttk.Label(root, text="❓", foreground="blue", cursor="hand2")
         self.question_mark_label_mode.grid(row=7, column=2, padx=5, pady=5)
-
-        # Events für den Verkehrsmittel-Tooltip
         self.question_mark_label_mode.bind("<Enter>", self.show_mode_tooltip)
         self.question_mark_label_mode.bind("<Leave>", self.hide_mode_tooltip)
 
         # -----------------------------------
-        # Zeile 8: Wegezweck (+ Fragezeichen #2)
+        # Zeile 8: Wegezweck
         # -----------------------------------
         ttk.Label(root, text="Wegezweck:").grid(row=8, column=0, padx=5, pady=5)
         self.purpose_var = tk.StringVar(value="")
@@ -229,8 +217,6 @@ class TrafficDiaryApp:
         self.tooltip_window_purpose = None
         self.question_mark_label_purpose = ttk.Label(root, text="❓", foreground="blue", cursor="hand2")
         self.question_mark_label_purpose.grid(row=8, column=2, padx=5, pady=5)
-
-        # Events für den Wegezweck-Tooltip
         self.question_mark_label_purpose.bind("<Enter>", self.show_purpose_tooltip)
         self.question_mark_label_purpose.bind("<Leave>", self.hide_purpose_tooltip)
 
@@ -244,7 +230,8 @@ class TrafficDiaryApp:
         # -----------------------------------
         # Zeile 10: Auswerten-Button
         # -----------------------------------
-        ttk.Button(root, text="Jetzt auswerten", command=self.analyze_data).grid(
+        # NEU: nicht direkt analyze_data, sondern open_analysis_options
+        ttk.Button(root, text="Jetzt auswerten", command=self.open_analysis_options).grid(
             row=10, column=0, columnspan=2, padx=5, pady=10
         )
 
@@ -273,113 +260,166 @@ class TrafficDiaryApp:
         self.end_date_var.trace_add("write", self.clear_message)
 
     # --------------------------------------------------
-    #  Tooltip-Methoden für Verkehrsmittel
+    # NEU: Optionen-Fenster zum Auswählen, welche Benutzer
+    #      in die Auswertung einbezogen werden sollen.
     # --------------------------------------------------
-    def show_mode_tooltip(self, event):
-        """Tooltip für das Verkehrsmittel (erste Fragezeichen)."""
-        if self.tooltip_window_mode is not None:
-            return  # Schon offen
+    def open_analysis_options(self):
+        """
+        Öffnet ein neues Toplevel-Fenster, in dem man auswählen kann,
+        welche Benutzer in die Analyse einfließen sollen.
+        """
 
-        # Toplevel-Fenster ohne Rahmen
-        self.tooltip_window_mode = tk.Toplevel(self.root)
-        self.tooltip_window_mode.wm_overrideredirect(True)
+        # Toplevel-Fenster
+        options_window = tk.Toplevel(self.root)
+        options_window.title("Auswertung anpassen: Benutzer-Auswahl")
 
-        x = event.x_root
-        y = event.y_root + 20
-        self.tooltip_window_mode.geometry(f"+{x}+{y}")
+        # Frame für die Checkbuttons
+        checks_frame = ttk.Frame(options_window)
+        checks_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 
-        table_frame = tk.Frame(self.tooltip_window_mode, background="white", relief="solid", borderwidth=1)
-        table_frame.pack()
+        # Liste/Dic zum Speichern der Checkbutton-Variablen
+        self.user_check_vars = {}
 
-        header_text = f"{'Verkehrsmittel':<15}{'Hierzu gehören':<40}"
-        header_label = tk.Label(
-            table_frame,
-            text=header_text,
-            font=("Consolas", 10, "bold"),  # fett, Monospace
-            background="white",
-            justify="left"
-        )
-        header_label.pack(anchor="w", padx=5, pady=(5, 2))
+        # Lade alle Nutzer aus USER_FILE (Vorname & Nachname),
+        # und erstelle für jeden einen Checkbutton
+        if os.path.exists(USER_FILE):
+            user_df = pd.read_csv(USER_FILE)
+            for index, row in user_df.iterrows():
+                full_name = f"{row['Vorname']} {row['Nachname']}"
+                var = tk.BooleanVar(value=True)  # Standard: angehakt
+                chk = ttk.Checkbutton(checks_frame, text=full_name, variable=var)
+                chk.pack(anchor="w", pady=2)
+                self.user_check_vars[full_name] = var
+        else:
+            # Falls keine Benutzer-Datei existiert:
+            tk.Label(checks_frame, text="Keine Benutzerdatei gefunden.").pack()
 
-        body_text = (
-            f"{'Fahrrad':<15}Pedelec, Lastenrad, E-Scooter, Cityroller etc.\n"
-            f"{'Fuß':<15}\n"
-            f"{'MIV':<15}\n"
-            f"{'MIV-Mitfahrer':<15}Mitfahrten, Taxifahrten etc.\n"
-            f"{'Sonstiges':<15}Schiff, Flugzeug, Rakete etc.\n"
-            f"{'ÖV':<15}\n"
-        )
-        body_label = tk.Label(
-            table_frame,
-            text=body_text,
-            font=("Consolas", 10),
-            background="white",
-            justify="left"
-        )
-        body_label.pack(anchor="w", padx=5, pady=(0, 5))
+        # Frame mit Buttons "Analyse starten" und "Abbrechen"
+        btn_frame = ttk.Frame(options_window)
+        btn_frame.pack(padx=10, pady=10, fill=tk.X)
 
-    def hide_mode_tooltip(self, event):
-        if self.tooltip_window_mode is not None:
-            self.tooltip_window_mode.destroy()
-            self.tooltip_window_mode = None
+        def start_analysis():
+            # Sammle alle Benutzer, die angehakt sind:
+            selected_users = [
+                name for name, var_obj in self.user_check_vars.items() if var_obj.get()
+            ]
+            options_window.destroy()
+            # Rufe die Analyse mit gefilterten Benutzern auf
+            self.analyze_data(selected_users)
 
-    # --------------------------------------------------
-    #  Tooltip-Methoden für Wegezweck (zweites Fragezeichen)
-    # --------------------------------------------------
-    def show_purpose_tooltip(self, event):
-        if self.tooltip_window_purpose is not None:
-            return  # Schon offen
-
-        self.tooltip_window_purpose = tk.Toplevel(self.root)
-        self.tooltip_window_purpose.wm_overrideredirect(True)
-
-        x = event.x_root
-        y = event.y_root + 20
-        self.tooltip_window_purpose.geometry(f"+{x}+{y}")
-
-        table_frame = tk.Frame(self.tooltip_window_purpose, background="white", relief="solid", borderwidth=1)
-        table_frame.pack()
-
-        header_text = f"{'Wegezweck':<12}{'Beispiel'}"
-        header_label = tk.Label(
-            table_frame,
-            text=header_text,
-            font=("Consolas", 10, "bold"),  # fett
-            background="white",
-            justify="left"
-        )
-        header_label.pack(anchor="w", padx=5, pady=(5, 2))
-
-        body_text = (
-            f"{'Arbeit':<12}Weg zur Arbeitsstätte\n"
-            f"{'Ausbildung':<12}Zur Universität, zur Schule etc.\n"
-            f"{'Begleitung':<12}Kind zur Schule bringen\n"
-            f"{'Dienstlich':<12}Dienstreise, Weg während der Arbeit\n"
-            f"{'Einkauf':<12}Lebensmittel/Getränke im Supermarkt\n"
-            f"{'Erledigung':<12}Arztbesuch\n"
-            f"{'Freizeit':<12}Weg nach Hause, zur Mensa, zum Sport,\n"
-            "            zu Freunden etc.\n\n"
-            "Wege zurück nach Hause sind immer Freizeit-Wege!"
-        )
-        body_label = tk.Label(
-            table_frame,
-            text=body_text,
-            font=("Consolas", 10),
-            background="white",
-            justify="left"
-        )
-        body_label.pack(anchor="w", padx=5, pady=(0, 5))
-
-    def hide_purpose_tooltip(self, event):
-        if self.tooltip_window_purpose is not None:
-            self.tooltip_window_purpose.destroy()
-            self.tooltip_window_purpose = None
+        ttk.Button(btn_frame, text="Analyse starten", command=start_analysis).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Abbrechen", command=options_window.destroy).pack(side=tk.LEFT, padx=5)
 
     # --------------------------------------------------
-    # Lese- und Schreibfunktionen für Benutzer
+    # Analyse und Diagramme (jetzt mit Filter-Option)
+    # --------------------------------------------------
+    def analyze_data(self, selected_users=None):
+        """
+        Führt die Datenanalyse durch.
+        selected_users: Liste von Benutzer-Namen, die ausgewertet werden sollen
+                        (z.B. ["Max Mustermann", "Lisa Müller", ...]).
+                        Ist None, werden alle genommen.
+        """
+        df = load_csv(DATA_FILE)
+        if df is None or df.empty:
+            handle_error("Keine Daten zum Auswerten vorhanden.", self.message_label)
+            return
+
+        # Optional Distanz numerisch
+        df["Distanz (km)"] = pd.to_numeric(df["Distanz (km)"], errors="coerce")
+
+        # Falls bestimmte Benutzer gefiltert werden sollen:
+        if selected_users:
+            df = df[df["Benutzer/in"].isin(selected_users)]
+            if df.empty:
+                handle_error("Keine Einträge für die gewählten Benutzer/innen vorhanden.", self.message_label)
+                return
+
+        create_chart_directory()
+
+        # Farbzuordnung
+        color_map = {
+            "MIV": "red",
+            "MIV-Mitfahrer": "orange",
+            "Fuß": "lightskyblue",
+            "Fahrrad": "darkblue",
+            "ÖV": "green",
+            "Sonstiges": "pink"
+        }
+
+        # --- 1) Modal Split (Anzahl Wege in %) ---
+        ways_by_mode_percent = df["Modus"].value_counts(normalize=True) * 100
+        ways_modes = ways_by_mode_percent.index
+        ways_colors = [color_map.get(m, "grey") for m in ways_modes]
+
+        ways_chart_path = os.path.join(CHART_DIRECTORY, "modal_split_ways.png")
+        plt.figure(figsize=(6, 6))
+        plt.pie(
+            ways_by_mode_percent,
+            labels=ways_modes,
+            autopct="%.1f%%",
+            startangle=140,
+            colors=ways_colors
+        )
+        plt.title("Modal Split Wege", fontsize=14, fontweight="bold")
+        plt.figtext(0.5, 0.01, "Angaben in Prozent", ha="center", fontsize=10)
+        plt.tight_layout()
+        plt.savefig(ways_chart_path)
+        plt.close()
+
+        # --- 2) Modal Split Personenkilometer ---
+        km_sum_by_mode = df.groupby("Modus")["Distanz (km)"].sum()
+        total_km = km_sum_by_mode.sum()
+        if total_km == 0:
+            handle_error("Keine Distanz vorhanden, Diagramm kann nicht erstellt werden.", self.message_label)
+            return
+
+        km_by_mode_percent = (km_sum_by_mode / total_km) * 100
+        km_modes = km_by_mode_percent.index
+        km_colors = [color_map.get(m, "grey") for m in km_modes]
+
+        km_chart_path = os.path.join(CHART_DIRECTORY, "modal_split_km.png")
+        plt.figure(figsize=(6, 6))
+        plt.pie(
+            km_by_mode_percent,
+            labels=km_modes,
+            autopct="%.1f%%",
+            startangle=140,
+            colors=km_colors
+        )
+        plt.title("Modal Split Personenkilometer", fontsize=14, fontweight="bold")
+        plt.figtext(0.5, 0.01, "Angaben in Prozent", ha="center", fontsize=10)
+        plt.tight_layout()
+        plt.savefig(km_chart_path)
+        plt.close()
+
+        # Ergebnis-Fenster
+        analysis_window = tk.Toplevel(self.root)
+        analysis_window.title("Analyse Ergebnisse: Modal Split")
+
+        try:
+            ways_img = Image.open(ways_chart_path)
+            ways_photo = ImageTk.PhotoImage(ways_img)
+            ways_label = tk.Label(analysis_window, image=ways_photo)
+            ways_label.image = ways_photo
+            ways_label.pack(side=tk.LEFT, padx=10, pady=10)
+
+            km_img = Image.open(km_chart_path)
+            km_photo = ImageTk.PhotoImage(km_img)
+            km_label = tk.Label(analysis_window, image=km_photo)
+            km_label.image = km_photo
+            km_label.pack(side=tk.LEFT, padx=10, pady=10)
+
+        except Exception as e:
+            handle_error(f"Fehler beim Laden der Diagramme: {e}", self.message_label)
+            return
+
+        show_success("Auswertung erfolgreich abgeschlossen.", self.message_label)
+
+    # --------------------------------------------------
+    # Benutzer-Funktionen
     # --------------------------------------------------
     def load_users(self):
-        """Lädt die Benutzer aus der CSV-Datei und befüllt das Dropdown-Menü."""
         self.user_menu['values'] = []
         if os.path.exists(USER_FILE):
             users = pd.read_csv(USER_FILE)
@@ -387,7 +427,6 @@ class TrafficDiaryApp:
             self.user_menu['values'] = user_list
 
     def add_new_user(self):
-        """Öffnet ein neues Fenster, um einen neuen Benutzer anzulegen."""
         def save_user(event=None):
             first_name = first_name_var.get().strip()
             last_name = last_name_var.get().strip()
@@ -442,7 +481,82 @@ class TrafficDiaryApp:
         user_window.bind("<Return>", save_user)
 
     # --------------------------------------------------
-    # NEUE METHODEN: Datum wählen (Kalender)
+    # Tooltip-Methoden
+    # --------------------------------------------------
+    def show_mode_tooltip(self, event):
+        if self.tooltip_window_mode is not None:
+            return
+        self.tooltip_window_mode = tk.Toplevel(self.root)
+        self.tooltip_window_mode.wm_overrideredirect(True)
+
+        x = event.x_root
+        y = event.y_root + 20
+        self.tooltip_window_mode.geometry(f"+{x}+{y}")
+
+        table_frame = tk.Frame(self.tooltip_window_mode, background="white", relief="solid", borderwidth=1)
+        table_frame.pack()
+
+        header_text = f"{'Verkehrsmittel':<15}{'Hierzu gehören':<40}"
+        header_label = tk.Label(table_frame, text=header_text, font=("Consolas", 10, "bold"),
+                                background="white", justify="left")
+        header_label.pack(anchor="w", padx=5, pady=(5, 2))
+
+        body_text = (
+            f"{'Fahrrad':<15}Pedelec, Lastenrad, E-Scooter etc.\n"
+            f"{'Fuß':<15}\n"
+            f"{'MIV':<15}\n"
+            f"{'MIV-Mitfahrer':<15}Mitfahrten, Taxifahrten etc.\n"
+            f"{'Sonstiges':<15}Schiff, Flugzeug, Rakete etc.\n"
+            f"{'ÖV':<15}\n"
+        )
+        body_label = tk.Label(table_frame, text=body_text, font=("Consolas", 10),
+                              background="white", justify="left")
+        body_label.pack(anchor="w", padx=5, pady=(0, 5))
+
+    def hide_mode_tooltip(self, event):
+        if self.tooltip_window_mode is not None:
+            self.tooltip_window_mode.destroy()
+            self.tooltip_window_mode = None
+
+    def show_purpose_tooltip(self, event):
+        if self.tooltip_window_purpose is not None:
+            return
+        self.tooltip_window_purpose = tk.Toplevel(self.root)
+        self.tooltip_window_purpose.wm_overrideredirect(True)
+
+        x = event.x_root
+        y = event.y_root + 20
+        self.tooltip_window_purpose.geometry(f"+{x}+{y}")
+
+        table_frame = tk.Frame(self.tooltip_window_purpose, background="white", relief="solid", borderwidth=1)
+        table_frame.pack()
+
+        header_text = f"{'Wegezweck':<12}{'Beispiel'}"
+        header_label = tk.Label(table_frame, text=header_text, font=("Consolas", 10, "bold"),
+                                background="white", justify="left")
+        header_label.pack(anchor="w", padx=5, pady=(5, 2))
+
+        body_text = (
+            f"{'Arbeit':<12}Weg zur Arbeitsstätte\n"
+            f"{'Ausbildung':<12}Universität, Schule etc.\n"
+            f"{'Begleitung':<12}Kind zur Schule bringen\n"
+            f"{'Dienstlich':<12}Dienstreise, Weg während der Arbeit\n"
+            f"{'Einkauf':<12}Supermarkt\n"
+            f"{'Erledigung':<12}Arztbesuch\n"
+            f"{'Freizeit':<12}Nach Hause, Sport, Freunde etc.\n\n"
+            "Wege zurück nach Hause sind immer Freizeit-Wege!"
+        )
+        body_label = tk.Label(table_frame, text=body_text, font=("Consolas", 10),
+                              background="white", justify="left")
+        body_label.pack(anchor="w", padx=5, pady=(0, 5))
+
+    def hide_purpose_tooltip(self, event):
+        if self.tooltip_window_purpose is not None:
+            self.tooltip_window_purpose.destroy()
+            self.tooltip_window_purpose = None
+
+    # --------------------------------------------------
+    # Methoden für Kalender/Uhrzeit
     # --------------------------------------------------
     def select_start_date(self):
         self.select_date(self.start_date_var, "Startdatum")
@@ -453,7 +567,6 @@ class TrafficDiaryApp:
     def select_date(self, variable, title):
         top = tk.Toplevel(self.root)
         top.title(title)
-
         cal = Calendar(top, selectmode="day", date_pattern="dd.mm.yyyy")
         cal.pack(pady=10)
 
@@ -464,9 +577,6 @@ class TrafficDiaryApp:
 
         cal.bind("<<CalendarSelected>>", on_date_selected)
 
-    # --------------------------------------------------
-    # NEUE METHODEN: Uhrzeit wählen mit Doppelpunkt
-    # --------------------------------------------------
     def select_start_time(self):
         self.select_time(self.start_time_var, "Startzeit")
 
@@ -495,14 +605,12 @@ class TrafficDiaryApp:
         def confirm_time(event=None):
             h = hour_var.get()
             m = minute_var.get()
-
             if len(h) != 2 or len(m) != 2:
-                handle_error("Bitte exakt 2 Ziffern für Stunde und Minute eingeben.", self.message_label)
+                handle_error("Bitte 2 Ziffern für Stunde und Minute eingeben.", self.message_label)
                 return
             if not (h.isdigit() and m.isdigit()):
                 handle_error("Nur Ziffern sind erlaubt (z.B. 07:05).", self.message_label)
                 return
-
             hour_int = int(h)
             minute_int = int(m)
             if not (0 <= hour_int <= 23):
@@ -511,7 +619,6 @@ class TrafficDiaryApp:
             if not (0 <= minute_int <= 59):
                 handle_error("Minute muss zwischen 00 und 59 liegen.", self.message_label)
                 return
-
             time_str = f"{h}:{m}"
             variable.set(time_str)
             top.destroy()
@@ -520,7 +627,7 @@ class TrafficDiaryApp:
         hour_entry.focus()
 
     # --------------------------------------------------
-    # 1) Karte für STARTPUNKT
+    # Karte
     # --------------------------------------------------
     def open_map_for_startpoint(self, event=None):
         self.open_map_generic(
@@ -529,9 +636,6 @@ class TrafficDiaryApp:
             confirm_btn_text="Diesen Startpunkt übernehmen"
         )
 
-    # --------------------------------------------------
-    # 2) Karte für ENDPUNKT
-    # --------------------------------------------------
     def open_map_for_endpoint(self, event=None):
         self.open_map_generic(
             var_name="end_point",
@@ -539,19 +643,12 @@ class TrafficDiaryApp:
             confirm_btn_text="Diesen Endpunkt übernehmen"
         )
 
-    # --------------------------------------------------
-    # ABSTRAKTE HILFSFUNKTION: Offene Karte (für Start + End)
-    # --------------------------------------------------
     def open_map_generic(self, var_name, window_title, confirm_btn_text):
         map_window = tk.Toplevel(self.root)
         map_window.title(window_title)
 
         style = ttk.Style(map_window)
-        style.configure(
-            "BigButton.TButton",
-            font=("Arial", 12, "bold"),
-            padding=6
-        )
+        style.configure("BigButton.TButton", font=("Arial", 12, "bold"), padding=6)
 
         search_frame = ttk.Frame(map_window)
         search_frame.pack(fill=tk.X, padx=5, pady=5)
@@ -568,7 +665,6 @@ class TrafficDiaryApp:
             if marker is not None:
                 handle_error("Ein Marker existiert bereits. Bitte 'Marker zurücksetzen'.", self.message_label)
                 return
-
             try:
                 loc = geolocator.geocode(query)
                 if loc:
@@ -595,7 +691,6 @@ class TrafficDiaryApp:
             max_zoom=19
         )
 
-        # Standard-Position: Karlsruhe
         karlsruhe_lat, karlsruhe_lon = 49.00937, 8.40444
         map_widget.set_position(karlsruhe_lat, karlsruhe_lon)
         map_widget.set_zoom(12)
@@ -637,26 +732,16 @@ class TrafficDiaryApp:
                     self.end_point_var.set(coord_str)
             map_window.destroy()
 
-        reset_btn = ttk.Button(
-            action_frame,
-            text="Marker zurücksetzen",
-            command=reset_marker,
-            style="BigButton.TButton"
-        )
+        reset_btn = ttk.Button(action_frame, text="Marker zurücksetzen", command=reset_marker, style="BigButton.TButton")
         reset_btn.pack(side=tk.LEFT, padx=10)
 
-        confirm_btn = ttk.Button(
-            action_frame,
-            text=confirm_btn_text,
-            command=confirm_selection,
-            style="BigButton.TButton"
-        )
+        confirm_btn = ttk.Button(action_frame, text=confirm_btn_text, command=confirm_selection, style="BigButton.TButton")
         confirm_btn.pack(side=tk.RIGHT, padx=10)
 
         map_widget.pack(fill=tk.BOTH, expand=True)
 
     # --------------------------------------------------
-    # Speichern und Validierung
+    # Speichern, Zurücksetzen usw.
     # --------------------------------------------------
     def save_entry(self):
         user = self.user_var.get()
@@ -723,112 +808,6 @@ class TrafficDiaryApp:
         self.load_users()
         self.clear_fields()
         self.message_label.config(text="")
-
-    # --------------------------------------------------
-    # Analyse und Diagramme
-    # --------------------------------------------------
-    def analyze_data(self):
-        df = load_csv(DATA_FILE)
-        if df is None or df.empty:
-            handle_error("Keine Daten zum Auswerten vorhanden.", self.message_label)
-            return
-
-        # Falls "Distanz (km)" nicht numerisch ist, konvertieren:
-        df["Distanz (km)"] = pd.to_numeric(df["Distanz (km)"], errors="coerce")
-
-        create_chart_directory()
-
-        # --- Farbzuordnung für alle Diagramme ---
-        color_map = {
-            "MIV": "red",            # rot
-            "MIV-Mitfahrer": "orange",
-            "Fuß": "lightskyblue",   # hellblau
-            "Fahrrad": "darkblue",   # dunkelblau
-            "ÖV": "green",           # grün
-            "Sonstiges": "pink"      # pink
-        }
-
-        # ---------------------------------------------------
-        # 1) Modal Split (Anzahl Wege in %)
-        # ---------------------------------------------------
-        ways_by_mode_percent = df["Modus"].value_counts(normalize=True) * 100
-
-        ways_chart_path = os.path.join(CHART_DIRECTORY, "modal_split_ways.png")
-
-        # Farben in der Reihenfolge der auftretenden Modi
-        ways_modes = ways_by_mode_percent.index
-        ways_colors = [color_map.get(m, "grey") for m in ways_modes]
-
-        plt.figure(figsize=(6, 6))
-        plt.pie(
-            ways_by_mode_percent,
-            labels=ways_modes,
-            autopct="%.1f%%",
-            startangle=140,
-            colors=ways_colors
-        )
-        plt.title("Modal Split Wege", fontsize=14, fontweight="bold")
-        plt.figtext(0.5, 0.01, "Angaben in Prozent", ha="center", fontsize=10)
-
-        plt.tight_layout()
-        plt.savefig(ways_chart_path)
-        plt.close()
-
-        # ---------------------------------------------------
-        # 2) Modal Split Personenkilometer
-        # ---------------------------------------------------
-        km_sum_by_mode = df.groupby("Modus")["Distanz (km)"].sum()
-        total_km = km_sum_by_mode.sum()
-        if total_km == 0:
-            handle_error("Keine Distanz vorhanden, Diagramm kann nicht erstellt werden.", self.message_label)
-            return
-
-        km_by_mode_percent = (km_sum_by_mode / total_km) * 100
-        km_chart_path = os.path.join(CHART_DIRECTORY, "modal_split_km.png")
-
-        # Farben in der Reihenfolge der auftretenden Modi (Kilometer)
-        km_modes = km_by_mode_percent.index
-        km_colors = [color_map.get(m, "grey") for m in km_modes]
-
-        plt.figure(figsize=(6, 6))
-        plt.pie(
-            km_by_mode_percent,
-            labels=km_modes,
-            autopct="%.1f%%",
-            startangle=140,
-            colors=km_colors
-        )
-        plt.title("Modal Split Personenkilometer", fontsize=14, fontweight="bold")
-        plt.figtext(0.5, 0.01, "Angaben in Prozent", ha="center", fontsize=10)
-
-        plt.tight_layout()
-        plt.savefig(km_chart_path)
-        plt.close()
-
-        # --- Fenster mit den beiden Diagrammen anzeigen ---
-        analysis_window = tk.Toplevel(self.root)
-        analysis_window.title("Analyse Ergebnisse: Modal Split")
-
-        try:
-            # 1) Bild für Wege
-            ways_img = Image.open(ways_chart_path)
-            ways_photo = ImageTk.PhotoImage(ways_img)
-            ways_label = tk.Label(analysis_window, image=ways_photo)
-            ways_label.image = ways_photo
-            ways_label.pack(side=tk.LEFT, padx=10, pady=10)
-
-            # 2) Bild für Personenkilometer
-            km_img = Image.open(km_chart_path)
-            km_photo = ImageTk.PhotoImage(km_img)
-            km_label = tk.Label(analysis_window, image=km_photo)
-            km_label.image = km_photo
-            km_label.pack(side=tk.LEFT, padx=10, pady=10)
-
-        except Exception as e:
-            handle_error(f"Fehler beim Laden der Diagramme: {e}", self.message_label)
-            return
-
-        show_success("Auswertung erfolgreich abgeschlossen.", self.message_label)
 
 # --------------------------------------------------
 # Hauptprogramm starten
