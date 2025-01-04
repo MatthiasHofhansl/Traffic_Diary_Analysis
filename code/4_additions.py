@@ -257,20 +257,29 @@ class TrafficDiaryApp:
         self.start_date_var.trace_add("write", self.clear_message)
         self.end_date_var.trace_add("write", self.clear_message)
 
+        # --- NEU ODER GEÄNDERT: Variablen für Analyse-Zeitraum
+        self.analysis_start_date_var = tk.StringVar()
+        self.analysis_end_date_var = tk.StringVar()
+        # -----------------------------------------------------
+
     # --------------------------------------------------
     # NEU: Optionen-Fenster zum Auswählen, welche Benutzer
-    #      in die Auswertung einbezogen werden sollen.
+    #      in die Auswertung einbezogen werden sollen,
+    #      UND zusätzlich ein Zeitraum (Start/Enddatum).
     # --------------------------------------------------
     def open_analysis_options(self):
         """
         Öffnet ein neues Toplevel-Fenster, in dem man auswählen kann,
         welche Benutzer in die Analyse einfließen sollen.
+        Zusätzlich wird ein Start- und Enddatum für den Analyse-Zeitraum abgefragt.
         """
         options_window = tk.Toplevel(self.root)
-        options_window.title("Auswertung anpassen: Benutzer-Auswahl")
+        options_window.title("Auswertung anpassen")
 
         checks_frame = ttk.Frame(options_window)
         checks_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+
+        tk.Label(checks_frame, text="Bitte Benutzer auswählen:").pack(anchor="w", pady=(0, 5))
 
         self.user_check_vars = {}
 
@@ -285,6 +294,37 @@ class TrafficDiaryApp:
         else:
             tk.Label(checks_frame, text="Keine Benutzerdatei gefunden.").pack()
 
+        # --- NEU: Zeitraum-Frame
+        period_frame = ttk.Frame(options_window)
+        period_frame.pack(padx=10, pady=(0, 10), fill=tk.X, expand=True)
+
+        tk.Label(period_frame, text="Analyse-Zeitraum auswählen:").pack(anchor="w", pady=(0, 5))
+
+        # Startdatum
+        start_frame = ttk.Frame(period_frame)
+        start_frame.pack(fill=tk.X, pady=5)
+        ttk.Label(start_frame, text="Startdatum:").pack(side=tk.LEFT)
+        start_label = ttk.Label(start_frame, textvariable=self.analysis_start_date_var, width=12)
+        start_label.pack(side=tk.LEFT, padx=5)
+        ttk.Button(
+            start_frame,
+            text="Wählen",
+            command=lambda: self.select_analysis_date(self.analysis_start_date_var, "Analyse-Startdatum")
+        ).pack(side=tk.LEFT)
+
+        # Enddatum
+        end_frame = ttk.Frame(period_frame)
+        end_frame.pack(fill=tk.X, pady=5)
+        ttk.Label(end_frame, text="Enddatum:").pack(side=tk.LEFT)
+        end_label = ttk.Label(end_frame, textvariable=self.analysis_end_date_var, width=12)
+        end_label.pack(side=tk.LEFT, padx=5)
+        ttk.Button(
+            end_frame,
+            text="Wählen",
+            command=lambda: self.select_analysis_date(self.analysis_end_date_var, "Analyse-Enddatum")
+        ).pack(side=tk.LEFT)
+        # --- Ende NEU
+
         btn_frame = ttk.Frame(options_window)
         btn_frame.pack(padx=10, pady=10, fill=tk.X)
 
@@ -293,10 +333,30 @@ class TrafficDiaryApp:
                 name for name, var_obj in self.user_check_vars.items() if var_obj.get()
             ]
             options_window.destroy()
+            # Übergabe der neuen Zeitraums-Felder
             self.analyze_data(selected_users)
 
         ttk.Button(btn_frame, text="Analyse starten", command=start_analysis).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="Abbrechen", command=options_window.destroy).pack(side=tk.LEFT, padx=5)
+
+    # --------------------------------------------------
+    # Datumsauswahl für den Analyse-Zeitraum
+    # --------------------------------------------------
+    def select_analysis_date(self, variable, title):
+        """
+        Zeigt einen Kalender an und speichert das gewählte Datum in 'variable'.
+        """
+        top = tk.Toplevel(self.root)
+        top.title(title)
+        cal = Calendar(top, selectmode="day", date_pattern="dd.mm.yyyy")
+        cal.pack(pady=10)
+
+        def on_date_selected(event):
+            date = cal.get_date()
+            variable.set(date)
+            top.destroy()
+
+        cal.bind("<<CalendarSelected>>", on_date_selected)
 
     # --------------------------------------------------
     # Analyse und Diagramme (3 Diagramme; 2 nebeneinander, 1 darunter)
@@ -307,11 +367,46 @@ class TrafficDiaryApp:
         selected_users: Liste von Benutzer-Namen, die ausgewertet werden sollen
                         (z.B. ["Max Mustermann", "Lisa Müller", ...]).
                         Ist None oder leer, werden alle Personen ausgewertet.
+
+        Berücksichtigt zusätzlich den Zeitraum:
+        - self.analysis_start_date_var und self.analysis_end_date_var
         """
         df = load_csv(DATA_FILE)
         if df is None or df.empty:
             handle_error("Keine Daten zum Auswerten vorhanden.", self.message_label)
             return
+
+        # --- NEU ODER GEÄNDERT: Umwandeln der Datumszeit-Spalten und Filtern nach Zeitraum
+        try:
+            df["Startzeit_kombiniert"] = pd.to_datetime(df["Startzeit_kombiniert"], format="%d.%m.%Y %H:%M")
+        except Exception as e:
+            handle_error(f"Datum/Zeit-Umwandlung fehlgeschlagen: {e}", self.message_label)
+            return
+
+        # 1) Zeitraum aus den analysis_*_date_var lesen
+        analysis_start_str = self.analysis_start_date_var.get().strip()
+        analysis_end_str = self.analysis_end_date_var.get().strip()
+
+        # Nur filtern, wenn tatsächlich beide Felder belegt sind
+        if analysis_start_str and analysis_end_str:
+            try:
+                analysis_start_dt = datetime.strptime(analysis_start_str, "%d.%m.%Y")
+                analysis_end_dt = datetime.strptime(analysis_end_str, "%d.%m.%Y")
+                # Ende des Tages: 23:59:59
+                analysis_end_dt = analysis_end_dt.replace(hour=23, minute=59, second=59)
+
+                # Filter: hier Beispiel, nur Startzeiten im Bereich
+                df = df[df["Startzeit_kombiniert"] >= analysis_start_dt]
+                df = df[df["Startzeit_kombiniert"] <= analysis_end_dt]
+
+            except ValueError:
+                handle_error("Analyse-Zeitraum ungültig oder nicht vollständig.", self.message_label)
+                return
+
+            if df.empty:
+                handle_error("Keine Einträge im ausgewählten Zeitraum gefunden.", self.message_label)
+                return
+        # --- Ende NEU
 
         df["Distanz (km)"] = pd.to_numeric(df["Distanz (km)"], errors="coerce")
 
@@ -383,7 +478,7 @@ class TrafficDiaryApp:
             "Arbeit": "lightskyblue",
             "Dienstlich": "blue",
             "Ausbildung": "darkblue",
-            "Einkauf": "brown",  # "kastanienrot"
+            "Einkauf": "brown",
             "Erledigung": "red",
             "Freizeit": "yellow",
             "Begleitung": "lightgreen"
@@ -620,7 +715,7 @@ class TrafficDiaryApp:
             self.tooltip_window_purpose = None
 
     # --------------------------------------------------
-    # Methoden für Kalender/Uhrzeit
+    # Methoden für Kalender/Uhrzeit (Wege-Eintrag)
     # --------------------------------------------------
     def select_start_date(self):
         self.select_date(self.start_date_var, "Startdatum")
@@ -666,7 +761,6 @@ class TrafficDiaryApp:
         minute_entry = ttk.Entry(time_frame, textvariable=minute_var, width=2)
         minute_entry.grid(row=0, column=4, padx=2, pady=5)
 
-        # Bestätigungs-Logik
         def confirm_time(event=None):
             h = hour_var.get()
             m = minute_var.get()
@@ -688,10 +782,8 @@ class TrafficDiaryApp:
             variable.set(time_str)
             top.destroy()
 
-        # Enter-Taste zum Bestätigen
         top.bind("<Return>", confirm_time)
 
-        # NEU: OK-Button zum Bestätigen
         ttk.Button(time_frame, text="OK", command=confirm_time).grid(
             row=1, column=0, columnspan=5, pady=8
         )
@@ -833,9 +925,6 @@ class TrafficDiaryApp:
         start_datetime_str = f"{start_date} {start_time}"
         end_datetime_str = f"{end_date} {end_time}"
 
-        # --------------------------------------------------
-        # NEU: Prüfung Endzeit < Startzeit
-        # --------------------------------------------------
         try:
             start_dt = datetime.strptime(start_datetime_str, "%d.%m.%Y %H:%M")
             end_dt = datetime.strptime(end_datetime_str, "%d.%m.%Y %H:%M")
