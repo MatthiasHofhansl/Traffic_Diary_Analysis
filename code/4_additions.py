@@ -566,12 +566,12 @@ class TrafficDiaryApp:
         header_label.pack(anchor="w", padx=5, pady=(5, 2))
 
         body_text = (
-            f"{'Fahrrad':<15}Pedelec, Lastenrad, E-Scooter etc.\n"
-            f"{'Fuß':<15}\n"
-            f"{'MIV':<15}\n"
+            f"{'Fahrrad':<15}Pedelecs, E-Bikes, Lastenräder, E-Scooter etc.\n"
+            f"{'Fuß':<15}Fußbus\n"
+            f"{'MIV':<15}Auto, Transporter etc.\n"
             f"{'MIV-Mitfahrer':<15}Mitfahrten, Taxifahrten etc.\n"
             f"{'Sonstiges':<15}Schiff, Flugzeug, Rakete etc.\n"
-            f"{'ÖV':<15}\n"
+            f"{'ÖV':<15}Nahverkehr (Bus, Straßenbahn, RB), Fernverkehr (ICE, TGV, Flixtrain, Westbahn, Fernbus) etc.\n"
         )
         body_label = tk.Label(table_frame, text=body_text, font=("Consolas", 10),
                               background="white", justify="left")
