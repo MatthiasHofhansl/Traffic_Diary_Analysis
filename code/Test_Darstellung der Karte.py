@@ -15,7 +15,7 @@ import seaborn as sns
 from PIL import Image, ImageTk
 
 # NEU: Für die interaktive Karte (Startpunkt)
-# Bitte vorab installieren: pip install tkintermapview
+# Bitte vorab installieren: pip install tkintermapview  
 from tkintermapview import TkinterMapView
 
 DATA_FILE = "traffic_diary.csv"
