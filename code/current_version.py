@@ -39,9 +39,9 @@ def create_chart_directory():
 
 def parse_or_reverse_geocode(s):
     """
-    Prüft, ob 's' Koordinaten oder Textadresse ist.
-    Ist es Koordinate (lat, lon) -> Reverse-Geocoding
-    Sonst -> Forward-Geocoding
+    Prüft, ob 's' Koordinaten oder eine Text-Adresse ist.
+    Ist es Koordinate (lat, lon) -> Reverse-Geocoding.
+    Sonst -> Forward-Geocoding.
     """
     # Falls Komma vorhanden, versuchen wir "lat, lon" zu parsen
     if "," in s:
@@ -50,7 +50,6 @@ def parse_or_reverse_geocode(s):
             lat = float(lat_str.strip())
             lon = float(lon_str.strip())
             # Reverse-Geocoding: aus Koordinaten Adresse bekommen
-            # (Für reine Distanzberechnung reicht es, Koordinaten zurückzugeben.)
             location = geolocator.reverse((lat, lon))
             # location kann None sein, falls kein Eintrag gefunden
             if location:
@@ -754,21 +753,47 @@ class TrafficDiaryApp:
 
         create_chart_directory()
 
-        # 1) Modal Split (Wege in %)
+        # ---------------------------------------------------
+        # 1) Modal Split (Anzahl Wege in %)
+        # ---------------------------------------------------
         ways_by_mode_percent = df["Modus"].value_counts(normalize=True) * 100
+
+        # Definiere Farbzuordnung für jedes Verkehrsmittel:
+        color_map = {
+            "MIV": "red",            # rot
+            "MIV-Mitfahrer": "orange",
+            "Fuß": "lightskyblue",   # hellblau
+            "Fahrrad": "darkblue",   # dunkelblau
+            "ÖV": "green",           # grün
+            "Sonstiges": "pink"      # pink
+        }
+
+        # Index des Series-Objekts (z.B. ["Fahrrad", "MIV", ...])
+        modes = ways_by_mode_percent.index
+        # Für jeden Modus die passende Farbe holen
+        colors = [color_map.get(m, "grey") for m in modes]
+
         ways_chart_path = os.path.join(CHART_DIRECTORY, "modal_split_ways.png")
 
-        plt.figure(figsize=(5, 5))
-        ways_by_mode_percent.plot(
-            kind="pie", autopct="%.1f%%", startangle=140
+        plt.figure(figsize=(6, 6))
+        plt.pie(
+            ways_by_mode_percent,
+            labels=modes,
+            autopct="%.1f%%",
+            startangle=140,
+            colors=colors
         )
-        plt.title("Modal Split (Anzahl Wege in %)")
-        plt.ylabel("")
+        plt.title("Modal Split Wege", fontsize=14, fontweight="bold")
+        # Hinweis unter dem Diagramm
+        plt.figtext(0.5, 0.01, "Angaben in Prozent", ha="center", fontsize=10)
+
         plt.tight_layout()
         plt.savefig(ways_chart_path)
         plt.close()
 
+        # ---------------------------------------------------
         # 2) Modal Split (Kilometer in %)
+        # ---------------------------------------------------
         km_sum_by_mode = df.groupby("Modus")["Distanz (km)"].sum()
         total_km = km_sum_by_mode.sum()
         if total_km == 0:
@@ -788,16 +813,19 @@ class TrafficDiaryApp:
         plt.savefig(km_chart_path)
         plt.close()
 
+        # --- Fenster mit den beiden Diagrammen anzeigen ---
         analysis_window = tk.Toplevel(self.root)
         analysis_window.title("Analyse Ergebnisse: Modal Split")
 
         try:
+            # 1) Bild für Wege (Modal Split Wege)
             ways_img = Image.open(ways_chart_path)
             ways_photo = ImageTk.PhotoImage(ways_img)
             ways_label = tk.Label(analysis_window, image=ways_photo)
             ways_label.image = ways_photo
             ways_label.pack(side=tk.LEFT, padx=10, pady=10)
 
+            # 2) Bild für Kilometer (Modal Split km)
             km_img = Image.open(km_chart_path)
             km_photo = ImageTk.PhotoImage(km_img)
             km_label = tk.Label(analysis_window, image=km_photo)
