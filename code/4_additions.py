@@ -825,6 +825,23 @@ class TrafficDiaryApp:
         start_datetime_str = f"{start_date} {start_time}"
         end_datetime_str = f"{end_date} {end_time}"
 
+        # --------------------------------------------------
+        # NEU: Prüfung Endzeit < Startzeit
+        # --------------------------------------------------
+        try:
+            start_dt = datetime.strptime(start_datetime_str, "%d.%m.%Y %H:%M")
+            end_dt = datetime.strptime(end_datetime_str, "%d.%m.%Y %H:%M")
+        except ValueError:
+            handle_error("Datum/Zeit-Format ist ungültig. Bitte Format TT.MM.YYYY HH:MM verwenden.", self.message_label)
+            return
+
+        if end_dt < start_dt:
+            handle_error(
+                "Enddatum/-zeit liegt vor Startdatum/-zeit. Bitte prüfen, ob das Enddatum evtl. am Folgetag angegeben ist.",
+                self.message_label
+            )
+            return
+
         dist = calculate_distance(start_point, end_point)
         if dist is None:
             handle_error("Distanz konnte nicht berechnet werden.", self.message_label)
