@@ -11,9 +11,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Wichtig bei manchen Tkinter-Setups auf Windows
-matplotlib.use("Agg")  # Damit kein zusätzliches Matplotlib-Fenster geöffnet wird
-
+matplotlib.use("Agg")  # Falls auf manchen Systemen nötig, um Backend-Probleme zu vermeiden
 from PIL import Image, ImageTk
 
 # Bitte vorab installieren: pip install tkintermapview
@@ -301,7 +299,7 @@ class TrafficDiaryApp:
         ttk.Button(btn_frame, text="Abbrechen", command=options_window.destroy).pack(side=tk.LEFT, padx=5)
 
     # --------------------------------------------------
-    # Analyse und Diagramme (3 Diagramme, horizontales Layout + Scroll)
+    # Analyse und Diagramme (3 Diagramme; 2 nebeneinander, 1 darunter)
     # --------------------------------------------------
     def analyze_data(self, selected_users=None):
         """
@@ -410,78 +408,71 @@ class TrafficDiaryApp:
         plt.close()
 
         # ---------------------------------------
-        # NEU: Scrollbares Fenster für die Diagramme
+        # Scrollbares Fenster für die Diagramme
         # ---------------------------------------
         analysis_window = tk.Toplevel(self.root)
         analysis_window.title("Analyse Ergebnisse: Modal Split und Verkehrsaufkommen")
 
-        # 1) Container Frame
         container = ttk.Frame(analysis_window)
         container.pack(fill=tk.BOTH, expand=True)
 
-        # 2) Canvas
         canvas = tk.Canvas(container)
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        # 3) Scrollbar
         scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         canvas.configure(yscrollcommand=scrollbar.set)
-
-        # 4) Frame im Canvas, das die Diagramme enthält
         diagrams_frame = ttk.Frame(canvas)
-        # Erzeugt ein Fenster im Canvas an Position (0,0)
         canvas.create_window((0, 0), window=diagrams_frame, anchor="nw")
 
-        # 5) Funktion, um Scrollregion zu aktualisieren
         def on_frame_configure(event):
             canvas.configure(scrollregion=canvas.bbox("all"))
-
         diagrams_frame.bind("<Configure>", on_frame_configure)
 
-        # 6) Option: Scrollen mit dem Mausrad
-        # (Auf Windows: event.delta. Auf Linux: event.num=4 oder 5)
         def _on_mousewheel(event):
-            # Windows / MacOS
-            if event.delta:
+            if event.delta:  # Windows/Mac
                 canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-            else:
-                # Linux
+            else:  # Linux
                 if event.num == 4:
                     canvas.yview_scroll(-1, "units")
                 elif event.num == 5:
                     canvas.yview_scroll(1, "units")
 
-        # Events binden
-        diagrams_frame.bind("<MouseWheel>", _on_mousewheel)       # Windows
-        diagrams_frame.bind("<Button-4>", _on_mousewheel)         # Linux scroll up
-        diagrams_frame.bind("<Button-5>", _on_mousewheel)         # Linux scroll down
+        diagrams_frame.bind("<MouseWheel>", _on_mousewheel)
+        diagrams_frame.bind("<Button-4>", _on_mousewheel)
+        diagrams_frame.bind("<Button-5>", _on_mousewheel)
 
-        # ------------------------------
-        # Diagramme nebeneinander platzieren
-        # ------------------------------
+        # ---------------------------------------
+        # 2 Diagramme NEBENEINANDER, 3. Diagramm DARUNTER
+        # ---------------------------------------
+        upper_frame = ttk.Frame(diagrams_frame)
+        upper_frame.pack(side=tk.TOP, fill=tk.X, pady=10)
+
+        lower_frame = ttk.Frame(diagrams_frame)
+        lower_frame.pack(side=tk.TOP, fill=tk.X, pady=10)
+
         try:
-            # 1) Modal Split Wege
+            # 1) Modal Split Wege (links in upper_frame)
             ways_img = Image.open(ways_chart_path)
             ways_photo = ImageTk.PhotoImage(ways_img)
-            ways_label = tk.Label(diagrams_frame, image=ways_photo)
+            ways_label = tk.Label(upper_frame, image=ways_photo)
             ways_label.image = ways_photo
-            ways_label.pack(side=tk.LEFT, padx=10, pady=10)
+            ways_label.pack(side=tk.LEFT, padx=10)
 
-            # 2) Modal Split Personenkilometer
+            # 2) Modal Split Personenkilometer (rechts in upper_frame)
             km_img = Image.open(km_chart_path)
             km_photo = ImageTk.PhotoImage(km_img)
-            km_label = tk.Label(diagrams_frame, image=km_photo)
+            km_label = tk.Label(upper_frame, image=km_photo)
             km_label.image = km_photo
-            km_label.pack(side=tk.LEFT, padx=10, pady=10)
+            km_label.pack(side=tk.LEFT, padx=10)
 
-            # 3) Verkehrsaufkommen (Wege)
+            # 3) Verkehrsaufkommen (Wege) (allein in lower_frame)
             wz_img = Image.open(wegezweck_chart_path)
             wz_photo = ImageTk.PhotoImage(wz_img)
-            wz_label = tk.Label(diagrams_frame, image=wz_photo)
+            wz_label = tk.Label(lower_frame, image=wz_photo)
             wz_label.image = wz_photo
-            wz_label.pack(side=tk.LEFT, padx=10, pady=10)
+            wz_label.pack(side=tk.TOP, padx=10)
 
         except Exception as e:
             handle_error(f"Fehler beim Laden der Diagramme: {e}", self.message_label)
