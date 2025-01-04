@@ -7,14 +7,13 @@ from geopy.distance import geodesic
 from geopy.geocoders import MapBox
 from datetime import datetime
 
-# NEUE IMPORTS für Diagramme und erweiterte Analysen
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# NEUER IMPORT, um PNG-Dateien in Tkinter anzuzeigen
+# Zum Anzeigen von PNG-Dateien in Tkinter
 from PIL import Image, ImageTk
 
-# NEU: Für die interaktive Karte (Start- und Endpunkt)
+# Für die interaktive Karte
 # Bitte vorab installieren: pip install tkintermapview
 from tkintermapview import TkinterMapView
 
@@ -38,20 +37,51 @@ def create_chart_directory():
     if not os.path.exists(CHART_DIRECTORY):
         os.makedirs(CHART_DIRECTORY)
 
+def parse_or_reverse_geocode(s):
+    """
+    Prüft, ob 's' Koordinaten oder Textadresse ist.
+    Ist es Koordinate (lat, lon) -> Reverse-Geocoding
+    Sonst -> Forward-Geocoding
+    """
+    # Falls Komma vorhanden, versuchen wir "lat, lon" zu parsen
+    if "," in s:
+        try:
+            lat_str, lon_str = s.split(",")
+            lat = float(lat_str.strip())
+            lon = float(lon_str.strip())
+            # Reverse-Geocoding: aus Koordinaten Adresse bekommen
+            # (Für reine Distanzberechnung reicht es, Koordinaten zurückzugeben.)
+            location = geolocator.reverse((lat, lon))
+            # location kann None sein, falls kein Eintrag gefunden
+            if location:
+                return (lat, lon)
+            else:
+                return None
+        except ValueError:
+            # Parsing fehlgeschlagen -> normal geocoden
+            pass
+
+    # Standard: Forward-Geocoding (Adresssuche)
+    loc = geolocator.geocode(s)
+    if loc:
+        return (loc.latitude, loc.longitude)
+    else:
+        return None
+
 def calculate_distance(start_point, end_point):
     """
-    Berechnet die Distanz (in km) zwischen zwei Adressen (start_point, end_point)
-    mithilfe von geopy und MapBox.
+    Berechnet die Distanz (in km) zwischen zwei Adressen/Koordinaten
+    (start_point, end_point) mithilfe von geopy.
     """
     try:
-        start_coords = geolocator.geocode(start_point)
-        end_coords = geolocator.geocode(end_point)
+        start_coords = parse_or_reverse_geocode(start_point)
+        end_coords = parse_or_reverse_geocode(end_point)
+
         if not start_coords or not end_coords:
             return None
-        return geodesic(
-            (start_coords.latitude, start_coords.longitude),
-            (end_coords.latitude, end_coords.longitude)
-        ).kilometers
+
+        return geodesic(start_coords, end_coords).kilometers
+
     except:
         return None
 
@@ -85,7 +115,7 @@ class TrafficDiaryApp:
         self.root.title("Traffic Diary Analysis Tool")
 
         # -----------------------------------
-        #  Zeile 0: Benutzer-Auswahl
+        # Zeile 0: Benutzer-Auswahl
         # -----------------------------------
         ttk.Label(root, text="Benutzer/in:").grid(row=0, column=0, padx=5, pady=5)
         self.user_var = tk.StringVar()
@@ -101,7 +131,7 @@ class TrafficDiaryApp:
         )
 
         # -----------------------------------
-        #  Zeile 1: Startdatum
+        # Zeile 1: Startdatum
         # -----------------------------------
         ttk.Label(root, text="Startdatum:").grid(row=1, column=0, padx=5, pady=5)
         self.start_date_var = tk.StringVar()
@@ -111,7 +141,7 @@ class TrafficDiaryApp:
         self.start_date_label.grid(row=1, column=2, padx=5, pady=5)
 
         # -----------------------------------
-        #  Zeile 2: Enddatum
+        # Zeile 2: Enddatum
         # -----------------------------------
         ttk.Label(root, text="Enddatum:").grid(row=2, column=0, padx=5, pady=5)
         self.end_date_var = tk.StringVar()
@@ -121,7 +151,7 @@ class TrafficDiaryApp:
         self.end_date_label.grid(row=2, column=2, padx=5, pady=5)
 
         # -----------------------------------
-        #  Zeile 3: Startzeit
+        # Zeile 3: Startzeit
         # -----------------------------------
         ttk.Label(root, text="Startzeit:").grid(row=3, column=0, padx=5, pady=5)
         self.start_time_var = tk.StringVar()
@@ -131,7 +161,7 @@ class TrafficDiaryApp:
         self.start_time_label.grid(row=3, column=2, padx=5, pady=5)
 
         # -----------------------------------
-        #  Zeile 4: Endzeit
+        # Zeile 4: Endzeit
         # -----------------------------------
         ttk.Label(root, text="Endzeit:").grid(row=4, column=0, padx=5, pady=5)
         self.end_time_var = tk.StringVar()
@@ -141,7 +171,7 @@ class TrafficDiaryApp:
         self.end_time_label.grid(row=4, column=2, padx=5, pady=5)
 
         # -----------------------------------
-        #  Zeile 5: Startpunkt
+        # Zeile 5: Startpunkt
         # -----------------------------------
         ttk.Label(root, text="Startpunkt:").grid(row=5, column=0, padx=5, pady=5)
         self.start_point_var = tk.StringVar()
@@ -151,7 +181,7 @@ class TrafficDiaryApp:
         self.start_point_entry.bind("<Button-1>", self.open_map_for_startpoint)
 
         # -----------------------------------
-        #  Zeile 6: Endpunkt
+        # Zeile 6: Endpunkt
         # -----------------------------------
         ttk.Label(root, text="Endpunkt:").grid(row=6, column=0, padx=5, pady=5)
         self.end_point_var = tk.StringVar()
@@ -161,7 +191,7 @@ class TrafficDiaryApp:
         self.end_point_entry.bind("<Button-1>", self.open_map_for_endpoint)
 
         # -----------------------------------
-        #  Zeile 7: Verkehrsmittel (+ Fragezeichen #1)
+        # Zeile 7: Verkehrsmittel (+ Fragezeichen #1)
         # -----------------------------------
         ttk.Label(root, text="Verkehrsmittel:").grid(row=7, column=0, padx=5, pady=5)
         self.mode_var = tk.StringVar(value="")
@@ -185,7 +215,7 @@ class TrafficDiaryApp:
         self.question_mark_label_mode.bind("<Leave>", self.hide_mode_tooltip)
 
         # -----------------------------------
-        #  Zeile 8: Wegezweck (+ Fragezeichen #2)
+        # Zeile 8: Wegezweck (+ Fragezeichen #2)
         # -----------------------------------
         ttk.Label(root, text="Wegezweck:").grid(row=8, column=0, padx=5, pady=5)
         self.purpose_var = tk.StringVar(value="")
@@ -209,28 +239,28 @@ class TrafficDiaryApp:
         self.question_mark_label_purpose.bind("<Leave>", self.hide_purpose_tooltip)
 
         # -----------------------------------
-        #  Zeile 9: Speichern-Button
+        # Zeile 9: Speichern-Button
         # -----------------------------------
         ttk.Button(root, text="Speichern", command=self.save_entry).grid(
             row=9, column=0, columnspan=2, padx=5, pady=10
         )
 
         # -----------------------------------
-        #  Zeile 10: Auswerten-Button
+        # Zeile 10: Auswerten-Button
         # -----------------------------------
         ttk.Button(root, text="Jetzt auswerten", command=self.analyze_data).grid(
             row=10, column=0, columnspan=2, padx=5, pady=10
         )
 
         # -----------------------------------
-        #  Zeile 11: Zurücksetzen-Button
+        # Zeile 11: Zurücksetzen-Button
         # -----------------------------------
         ttk.Button(root, text="Zurücksetzen", command=self.reset_all).grid(
             row=11, column=0, columnspan=2, padx=5, pady=10
         )
 
         # -----------------------------------
-        #  Zeile 12: Meldungs-Label
+        # Zeile 12: Meldungs-Label
         # -----------------------------------
         self.message_label = ttk.Label(root, text="")
         self.message_label.grid(row=12, column=0, columnspan=3, padx=5, pady=5)
@@ -303,7 +333,7 @@ class TrafficDiaryApp:
             self.tooltip_window_mode = None
 
     # --------------------------------------------------
-    #  Tooltip-Methoden für Wegezweck (zweite Fragezeichen)
+    #  Tooltip-Methoden für Wegezweck (zweites Fragezeichen)
     # --------------------------------------------------
     def show_purpose_tooltip(self, event):
         """Tooltip für den Wegezweck (zweites Fragezeichen)."""
@@ -719,6 +749,9 @@ class TrafficDiaryApp:
             handle_error("Keine Daten zum Auswerten vorhanden.", self.message_label)
             return
 
+        # Optional sicherstellen, dass "Distanz (km)" wirklich numerisch ist
+        df["Distanz (km)"] = pd.to_numeric(df["Distanz (km)"], errors="coerce")
+
         create_chart_directory()
 
         # 1) Modal Split (Wege in %)
@@ -776,7 +809,6 @@ class TrafficDiaryApp:
             return
 
         show_success("Auswertung erfolgreich abgeschlossen.", self.message_label)
-
 
 # --------------------------------------------------
 # Hauptprogramm starten
