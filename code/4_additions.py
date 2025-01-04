@@ -881,11 +881,28 @@ class TrafficDiaryApp:
         self.message_label.config(text="")
 
     def reset_all(self):
+        """
+        Setzt alle Felder zurück und entfernt (falls vorhanden) die User- und Daten-Dateien.
+        Zusätzlich werden alle Dateien im Ordner "charts" gelöscht, der Ordner selbst bleibt aber bestehen.
+        """
         self.user_menu.set("")
+        
+        # USER_FILE und DATA_FILE löschen
         if os.path.exists(USER_FILE):
             os.remove(USER_FILE)
         if os.path.exists(DATA_FILE):
             os.remove(DATA_FILE)
+        
+        # NEU: Alle Dateien im Ordner CHART_DIRECTORY löschen
+        if os.path.exists(CHART_DIRECTORY):
+            for filename in os.listdir(CHART_DIRECTORY):
+                file_path = os.path.join(CHART_DIRECTORY, filename)
+                if os.path.isfile(file_path):
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass  # Fehler beim Löschen ignorieren
+        
         self.load_users()
         self.clear_fields()
         self.message_label.config(text="")
