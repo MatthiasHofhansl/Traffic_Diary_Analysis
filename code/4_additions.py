@@ -540,42 +540,57 @@ class TrafficDiaryApp:
         diagrams_frame.bind("<Button-5>", _on_mousewheel)
 
         # ---------------------------------------
-        # 2 Diagramme NEBENEINANDER, 3. Diagramm DARUNTER
+        # Oberer Bereich (2 Diagramme nebeneinander)
         # ---------------------------------------
         upper_frame = ttk.Frame(diagrams_frame)
-        upper_frame.pack(side=tk.TOP, fill=tk.X, pady=10)
-
-        lower_frame = ttk.Frame(diagrams_frame)
-        lower_frame.pack(side=tk.TOP, fill=tk.X, pady=10)
+        # Bündig: gleicher Innenabstand links/rechts wie unten
+        upper_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
         try:
-            # 1) Modal Split Wege (links in upper_frame)
+            # Modal Split Wege (links)
             ways_img = Image.open(ways_chart_path)
             ways_photo = ImageTk.PhotoImage(ways_img)
             ways_label = tk.Label(upper_frame, image=ways_photo)
             ways_label.image = ways_photo
-            ways_label.pack(side=tk.LEFT, padx=10)
+            ways_label.pack(side=tk.LEFT, anchor="n", padx=0)
 
-            # 2) Modal Split Personenkilometer (rechts in upper_frame)
+            # Modal Split Personenkilometer (rechts)
             km_img = Image.open(km_chart_path)
             km_photo = ImageTk.PhotoImage(km_img)
             km_label = tk.Label(upper_frame, image=km_photo)
             km_label.image = km_photo
-            km_label.pack(side=tk.LEFT, padx=10)
-
-            # 3) Verkehrsaufkommen (Wege) (allein in lower_frame)
-            wz_img = Image.open(wegezweck_chart_path)
-            wz_photo = ImageTk.PhotoImage(wz_img)
-            wz_label = tk.Label(lower_frame, image=wz_photo)
-            wz_label.image = wz_photo
-            wz_label.pack(side=tk.TOP, padx=10)
-
+            km_label.pack(side=tk.LEFT, anchor="n", padx=40)  # etwas Abstand nach rechts
         except Exception as e:
             handle_error(f"Fehler beim Laden der Diagramme: {e}", self.message_label)
             return
 
         # ---------------------------------------
-        # NEU: Anzeige der durchschnittlichen Werte
+        # Unterer Bereich (Diagramm + Werte nebeneinander)
+        # ---------------------------------------
+        lower_frame = ttk.Frame(diagrams_frame)
+        lower_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
+
+        # Linke Spalte: Verkehrsaufkommen (Wege)
+        lower_left_frame = ttk.Frame(lower_frame)
+        lower_left_frame.pack(side=tk.LEFT, anchor="n")
+
+        # Rechte Spalte: Statistikwerte
+        lower_right_frame = ttk.Frame(lower_frame)
+        lower_right_frame.pack(side=tk.LEFT, anchor="n", padx=40)
+
+        # Verkehrsaufkommen (Wege)-Diagramm
+        try:
+            wz_img = Image.open(wegezweck_chart_path)
+            wz_photo = ImageTk.PhotoImage(wz_img)
+            wz_label = tk.Label(lower_left_frame, image=wz_photo)
+            wz_label.image = wz_photo
+            wz_label.pack(side=tk.TOP, anchor="n")
+        except Exception as e:
+            handle_error(f"Fehler beim Laden des Diagramms 'Verkehrsaufkommen (Wege)': {e}", self.message_label)
+            return
+
+        # ---------------------------------------
+        # Statistikwerte (rechts neben dem Diagramm "Verkehrsaufkommen (Wege)")
         # ---------------------------------------
         # Anzahl der verschiedenen Tage in der Auswahl
         day_count = df["Startzeit_kombiniert"].dt.date.nunique()
@@ -592,20 +607,32 @@ class TrafficDiaryApp:
             avg_ways = 0
             avg_distance = 0
 
-        stats_frame = ttk.Frame(diagrams_frame)
-        stats_frame.pack(side=tk.TOP, fill=tk.X, pady=10)
+        # Überschrift in schwarzer, fetter Schrift
+        headline_label = ttk.Label(
+            lower_right_frame,
+            text="Durchschnittliche Tageswerte",
+            font=("Helvetica", 14, "bold"),
+            foreground="black"
+        )
+        headline_label.pack(side=tk.TOP, padx=0, pady=(0, 10), anchor="w")
 
+        # Durchschnittliche Wegeanzahl (normal, schwarz)
         label_avg_ways = ttk.Label(
-            stats_frame,
-            text=f"Durchschnittliche Wegeanzahl pro Tag: {avg_ways:.2f}"
+            lower_right_frame,
+            text=f"Durchschnittliche Wegeanzahl pro Tag: {avg_ways:.2f}",
+            font=("Helvetica", 12),
+            foreground="black"
         )
-        label_avg_ways.pack(side=tk.TOP, padx=10, pady=5, anchor="w")
+        label_avg_ways.pack(side=tk.TOP, padx=0, pady=5, anchor="w")
 
+        # Durchschnittliche Distanz (normal, schwarz)
         label_avg_distance = ttk.Label(
-            stats_frame,
-            text=f"Durchschnittlich zurückgelegte Strecke in Kilometern pro Tag: {avg_distance:.2f}"
+            lower_right_frame,
+            text=f"Durchschnittlich zurückgelegte Strecke (km/Tag): {avg_distance:.2f}",
+            font=("Helvetica", 12),
+            foreground="black"
         )
-        label_avg_distance.pack(side=tk.TOP, padx=10, pady=5, anchor="w")
+        label_avg_distance.pack(side=tk.TOP, padx=0, pady=5, anchor="w")
 
         show_success("Auswertung erfolgreich abgeschlossen.", self.message_label)
 
