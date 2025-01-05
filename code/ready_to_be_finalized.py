@@ -20,10 +20,7 @@ from tkintermapview import TkinterMapView
 # Globale Konstanten
 DATA_FILE = "traffic_diary.csv"
 USER_FILE = "users.csv"
-MAPBOX_API_KEY = (
-    "pk.eyJ1IjoibWF0dGhpYXNoZmwiLCJhIjoiY201ZWI5dzBkMjU2MjJ1czc2ZTI0OTlnNyJ9."
-    "6DFtWqtEQp5ufQeodVZ5dQ"
-)
+MAPBOX_API_KEY = "pk.eyJ1IjoibWF0dGhpYXNoZmwiLCJhIjoiY201ZWI5dzBkMjU2MjJ1czc2ZTI0OTlnNyJ9.6DFtWqtEQp5ufQeodVZ5dQ"
 CHART_DIRECTORY = "charts"
 
 # Geolocator-Objekt erstellen
