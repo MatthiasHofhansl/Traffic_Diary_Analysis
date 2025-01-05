@@ -1,3 +1,4 @@
+#Bibliotheken importieren
 import os
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -6,12 +7,11 @@ import pandas as pd
 from geopy.distance import geodesic
 from geopy.geocoders import MapBox
 from datetime import datetime
-
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-matplotlib.use("Agg")  # Falls dies für bestimmte Systeme nötig ist
+matplotlib.use("Agg")
 from PIL import Image, ImageTk
 
 # Hinweis: tkintermapview ggf. per "pip install tkintermapview" installieren
