@@ -9,24 +9,29 @@ The **Traffic_Diary_Analysis_Tool** is a Python-based program designed to save a
 - **Purpose of Travel** (selectable via a dropdown list)
 - **Participant Name** (selectable via a dropdown list with the option to create a new name; every name has an own ID)
 
-The data is stored and, upon completion, users can generate graphical analyses using **Matplotlib**.
+The collected data can be reviewed in simple charts.
 
 ## Features
 - **Data Entry**: Input journey details with an intuitive user interface.
-- **Dropdown Selection**: Choose transportation modes from a predefined list.
+- **Dropdown Selection**: Choose transportation modes and purpose of travel from a predefined list.
 - **Coordinate Integration**: Fetch geographical coordinates via the Mapbox Geocoder API.
 - **Data Storage**: Save entered journeys for future analysis.
-- **Visual Analysis**: Generate insightful diagrams and visualizations using Matplotlib.
+- **Visual Analysis**: Generate insightful charts using Matplotlib.
+
+## Additional Features
+- **Tooltips**: Helping users to choose from transportation modes and purpose of travel from a predefined list.
+- **graphical map**: Giving users the possibility to type in a specific location or to choose from a map by placing a marker 
 
 ## Usage
 1. Run the main program
 2. Follow the prompts to input journey details:
+   - Name (selectable via a dropdown list with the option to create a new name)
+   - Start and end dates
    - Start and end times
    - Start and end points (Are turned into coordinates from Mapbox Geocoder)
    - Mode of transportation (selectable via a dropdown list)
    - Purpose of travel (selectable via a dropdown list)
-   - Name (selectable via a dropdown list with the option to create a new name; every name has an own ID)
-3. Once all data is entered, click the **Evaluate** button.
+3. Once all data is entered, click the **Evaluate now** button.
 4. Visualizations and analysis results will be displayed as charts.
 
 ### Authors
