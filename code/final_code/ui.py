@@ -581,9 +581,9 @@ class TrafficDiaryApp:
             f"{'Fahrrad':<15}Pedelecs, E-Bikes, Lastenräder, E-Scooter etc.\n"
             f"{'Fuß':<15}Fußbus\n"
             f"{'MIV':<15}Auto, Transporter etc.\n"
-            f"{'MIV-Mitfahrer':<15}Mitfahrten, Taxi etc.\n"
-            f"{'Sonstiges':<15}Schiff, Flugzeug etc.\n"
-            f"{'ÖV':<15}Bus, Bahn (nah+fern), Fernbus etc.\n"
+            f"{'MIV-Mitfahrer':<15}Mitfahrten, Taxifahrten etc.\n"
+            f"{'Sonstiges':<15}Schiff, Flugzeug, Rakete etc.\n"
+            f"{'ÖV':<15}Nahverkehr (Bust, Straßenbahn, RB), Fernverkehr (ICE, TGV, Flixtrain, Westbahn, Fernbus) etc.\n"
         )
         body_label = tk.Label(
             table_frame,
@@ -615,7 +615,7 @@ class TrafficDiaryApp:
 
         header_label = tk.Label(
             table_frame,
-            text=f"{'Wegezweck':<12}{'Beispiel'}",
+            text=f"{'Wegezweck':<12}{'Hierzu gehören'}",
             font=("Consolas", 10, "bold"),
             background="white",
             justify="left"
@@ -623,14 +623,14 @@ class TrafficDiaryApp:
         header_label.pack(anchor="w", padx=5, pady=(5, 2))
 
         body_text = (
-            f"{'Arbeit':<12}Weg zur Arbeitsstätte\n"
-            f"{'Ausbildung':<12}Uni, Schule etc.\n"
-            f"{'Begleitung':<12}z.B. Kind bringen\n"
-            f"{'Dienstlich':<12}Dienstreise\n"
-            f"{'Einkauf':<12}Supermarkt\n"
-            f"{'Erledigung':<12}Arztbesuch\n"
-            f"{'Freizeit':<12}Sport, Freunde etc.\n\n"
-            "Wege zurück nach Hause zählen als Freizeit!"
+            f"{'Arbeit':<12}Wege zur Arbeitsstätte\n"
+            f"{'Ausbildung':<12}Wege zur Universität, Schule etc.\n"
+            f"{'Begleitung':<12}Kinder zum Kindergarten/zur Schule bringen etc.\n"
+            f"{'Dienstlich':<12}Dienstreisen\n"
+            f"{'Einkauf':<12}Supermarktbesuche etc.\n"
+            f"{'Erledigung':<12}Arztbesuche, Behördengänge etc.\n"
+            f"{'Freizeit':<12}Sport, Freunde treffen etc.\n\n"
+            "Wege zurück nach Hause zählen zu Freizeit!"
         )
         body_label = tk.Label(
             table_frame,
