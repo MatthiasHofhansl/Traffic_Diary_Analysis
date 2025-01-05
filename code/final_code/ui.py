@@ -1,5 +1,6 @@
 # ui.py
 
+import pandas as pd
 import os
 import tkinter as tk
 from tkinter import ttk, messagebox
