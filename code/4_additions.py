@@ -11,37 +11,47 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-matplotlib.use("Agg")  # Falls auf manchen Systemen nötig, um Backend-Probleme zu vermeiden
+matplotlib.use("Agg")  # Falls dies für bestimmte Systeme nötig ist
 from PIL import Image, ImageTk
 
-# Bitte vorab installieren: pip install tkintermapview
+# Hinweis: tkintermapview ggf. per "pip install tkintermapview" installieren
 from tkintermapview import TkinterMapView
 
+# Globale Konstanten
 DATA_FILE = "traffic_diary.csv"
 USER_FILE = "users.csv"
-MAPBOX_API_KEY = "pk.eyJ1IjoibWF0dGhpYXNoZmwiLCJhIjoiY201ZWI5dzBkMjU2MjJ1czc2ZTI0OTlnNyJ9.6DFtWqtEQp5ufQeodVZ5dQ"
+MAPBOX_API_KEY = (
+    "pk.eyJ1IjoibWF0dGhpYXNoZmwiLCJhIjoiY201ZWI5dzBkMjU2MjJ1czc2ZTI0OTlnNyJ9."
+    "6DFtWqtEQp5ufQeodVZ5dQ"
+)
 CHART_DIRECTORY = "charts"
 
+# Geolocator-Objekt erstellen
 geolocator = MapBox(api_key=MAPBOX_API_KEY)
 
+
 def handle_error(msg, label):
-    """Zeigt eine Fehlermeldung im GUI an."""
+    """Zeigt eine Fehlermeldung im GUI (roter Text) an."""
     label.config(text=msg, foreground="red")
 
+
 def show_success(msg, label):
-    """Zeigt eine Erfolgsnachricht im GUI an."""
+    """Zeigt eine Erfolgsnachricht im GUI (grüner Text) an."""
     label.config(text=msg, foreground="green")
 
+
 def create_chart_directory():
-    """Erzeugt den Ordner für Diagramme, wenn er nicht existiert."""
+    """Erzeugt den Ordner für Diagramme, falls er nicht existiert."""
     if not os.path.exists(CHART_DIRECTORY):
         os.makedirs(CHART_DIRECTORY)
 
+
 def parse_or_reverse_geocode(s):
     """
-    Prüft, ob 's' Koordinaten oder eine Text-Adresse ist.
-    Ist es Koordinate (lat, lon) -> Reverse-Geocoding.
-    Sonst -> Forward-Geocoding.
+    Bestimmt Koordinaten zu einem Adress- oder Koordinatentext.
+    - Ist 's' eine Koordinate (lat, lon), wird per Reverse-Geocoding validiert.
+    - Ist 's' eine Adresse, wird per Forward-Geocoding die Koordinate gesucht.
+    Gibt ein Tupel (lat, lon) oder None zurück.
     """
     if "," in s:
         try:
@@ -49,22 +59,15 @@ def parse_or_reverse_geocode(s):
             lat = float(lat_str.strip())
             lon = float(lon_str.strip())
             location = geolocator.reverse((lat, lon))
-            if location:
-                return (lat, lon)
-            else:
-                return None
+            return (lat, lon) if location else None
         except ValueError:
             pass
     loc = geolocator.geocode(s)
-    if loc:
-        return (loc.latitude, loc.longitude)
-    else:
-        return None
+    return (loc.latitude, loc.longitude) if loc else None
+
 
 def calculate_distance(start_point, end_point):
-    """
-    Berechnet die Distanz (in km) zwischen zwei Adressen/Koordinaten.
-    """
+    """Berechnet die Distanz (in km) zwischen zwei Adressen/Koordinaten."""
     try:
         start_coords = parse_or_reverse_geocode(start_point)
         end_coords = parse_or_reverse_geocode(end_point)
@@ -74,10 +77,11 @@ def calculate_distance(start_point, end_point):
     except:
         return None
 
+
 def save_to_csv(data, file_name):
     """
-    Speichert einen Dictionary-Eintrag als neue Zeile in einer CSV-Datei.
-    Existiert die Datei nicht, wird sie neu erstellt; sonst wird die Zeile angehängt.
+    Hängt einen Dictionary-Eintrag (Zeile) an eine CSV-Datei an.
+    Existiert sie nicht, wird sie neu erstellt.
     """
     df = pd.DataFrame([data])
     if not os.path.exists(file_name):
@@ -85,99 +89,95 @@ def save_to_csv(data, file_name):
     else:
         df.to_csv(file_name, mode="a", header=False, index=False)
 
+
 def load_csv(file_name):
     """
-    Lädt eine CSV-Datei als pandas DataFrame und gibt sie zurück.
-    Existiert die Datei nicht, wird None zurückgegeben.
+    Lädt eine CSV-Datei als pandas DataFrame.
+    Existiert sie nicht, wird None zurückgegeben.
     """
     if not os.path.exists(file_name):
         return None
     return pd.read_csv(file_name)
 
+
 class TrafficDiaryApp:
     """
-    Haupt-Klasse für die Tkinter-Anwendung.
-    Enthält alle GUI-Elemente und die zugehörige Logik.
+    Hauptklasse für das Tkinter-Programm.
+    Enthält GUI-Elemente und zugehörige Logik.
     """
+
     def __init__(self, root):
         self.root = root
         self.root.title("Traffic Diary Analysis Tool")
 
-        # -----------------------------------
         # Zeile 0: Benutzer-Auswahl
-        # -----------------------------------
         ttk.Label(root, text="Benutzer/in:").grid(row=0, column=0, padx=5, pady=5)
         self.user_var = tk.StringVar()
         self.user_menu = ttk.Combobox(root, textvariable=self.user_var, state="readonly")
         self.user_menu.grid(row=0, column=1, padx=5, pady=5)
-
         self.load_users()
 
-        ttk.Button(root, text="Neue/n Benutzer/in anlegen", command=self.add_new_user).grid(
-            row=0, column=2, padx=5, pady=5
-        )
+        ttk.Button(
+            root,
+            text="Neue/n Benutzer/in anlegen",
+            command=self.add_new_user
+        ).grid(row=0, column=2, padx=5, pady=5)
 
-        # -----------------------------------
         # Zeile 1: Startdatum
-        # -----------------------------------
         ttk.Label(root, text="Startdatum:").grid(row=1, column=0, padx=5, pady=5)
         self.start_date_var = tk.StringVar()
-        self.start_date_btn = ttk.Button(root, text="Startdatum wählen", command=self.select_start_date)
+        self.start_date_btn = ttk.Button(
+            root, text="Startdatum wählen", command=self.select_start_date
+        )
         self.start_date_btn.grid(row=1, column=1, padx=5, pady=5)
         self.start_date_label = ttk.Label(root, textvariable=self.start_date_var)
         self.start_date_label.grid(row=1, column=2, padx=5, pady=5)
 
-        # -----------------------------------
         # Zeile 2: Enddatum
-        # -----------------------------------
         ttk.Label(root, text="Enddatum:").grid(row=2, column=0, padx=5, pady=5)
         self.end_date_var = tk.StringVar()
-        self.end_date_btn = ttk.Button(root, text="Enddatum wählen", command=self.select_end_date)
+        self.end_date_btn = ttk.Button(
+            root, text="Enddatum wählen", command=self.select_end_date
+        )
         self.end_date_btn.grid(row=2, column=1, padx=5, pady=5)
         self.end_date_label = ttk.Label(root, textvariable=self.end_date_var)
         self.end_date_label.grid(row=2, column=2, padx=5, pady=5)
 
-        # -----------------------------------
         # Zeile 3: Startzeit
-        # -----------------------------------
         ttk.Label(root, text="Startzeit:").grid(row=3, column=0, padx=5, pady=5)
         self.start_time_var = tk.StringVar()
-        self.start_time_btn = ttk.Button(root, text="Startzeit wählen", command=self.select_start_time)
+        self.start_time_btn = ttk.Button(
+            root, text="Startzeit wählen", command=self.select_start_time
+        )
         self.start_time_btn.grid(row=3, column=1, padx=5, pady=5)
         self.start_time_label = ttk.Label(root, textvariable=self.start_time_var)
         self.start_time_label.grid(row=3, column=2, padx=5, pady=5)
 
-        # -----------------------------------
         # Zeile 4: Endzeit
-        # -----------------------------------
         ttk.Label(root, text="Endzeit:").grid(row=4, column=0, padx=5, pady=5)
         self.end_time_var = tk.StringVar()
-        self.end_time_btn = ttk.Button(root, text="Endzeit wählen", command=self.select_end_time)
+        self.end_time_btn = ttk.Button(
+            root, text="Endzeit wählen", command=self.select_end_time
+        )
         self.end_time_btn.grid(row=4, column=1, padx=5, pady=5)
         self.end_time_label = ttk.Label(root, textvariable=self.end_time_var)
         self.end_time_label.grid(row=4, column=2, padx=5, pady=5)
 
-        # -----------------------------------
         # Zeile 5: Startpunkt
-        # -----------------------------------
         ttk.Label(root, text="Startpunkt:").grid(row=5, column=0, padx=5, pady=5)
         self.start_point_var = tk.StringVar()
         self.start_point_entry = ttk.Entry(root, textvariable=self.start_point_var)
         self.start_point_entry.grid(row=5, column=1, padx=5, pady=5)
         self.start_point_entry.bind("<Button-1>", self.open_map_for_startpoint)
 
-        # -----------------------------------
         # Zeile 6: Endpunkt
-        # -----------------------------------
         ttk.Label(root, text="Endpunkt:").grid(row=6, column=0, padx=5, pady=5)
         self.end_point_var = tk.StringVar()
         self.end_point_entry = ttk.Entry(root, textvariable=self.end_point_var)
         self.end_point_entry.grid(row=6, column=1, padx=5, pady=5)
         self.end_point_entry.bind("<Button-1>", self.open_map_for_endpoint)
 
-        # -----------------------------------
         # Zeile 7: Verkehrsmittel
-        # -----------------------------------
         ttk.Label(root, text="Verkehrsmittel:").grid(row=7, column=0, padx=5, pady=5)
         self.mode_var = tk.StringVar(value="")
         mode_list = ["Fahrrad", "Fuß", "MIV", "MIV-Mitfahrer", "Sonstiges", "ÖV"]
@@ -190,19 +190,22 @@ class TrafficDiaryApp:
         )
         self.mode_box.grid(row=7, column=1, padx=5, pady=5)
 
-        # Tooltip-Fenster für Verkehrsmittel
+        # Tooltip-Verkehrsmittel
         self.tooltip_window_mode = None
-        self.question_mark_label_mode = ttk.Label(root, text="❓", foreground="blue", cursor="hand2")
+        self.question_mark_label_mode = ttk.Label(
+            root, text="❓", foreground="blue", cursor="hand2"
+        )
         self.question_mark_label_mode.grid(row=7, column=2, padx=5, pady=5)
         self.question_mark_label_mode.bind("<Enter>", self.show_mode_tooltip)
         self.question_mark_label_mode.bind("<Leave>", self.hide_mode_tooltip)
 
-        # -----------------------------------
         # Zeile 8: Wegezweck
-        # -----------------------------------
         ttk.Label(root, text="Wegezweck:").grid(row=8, column=0, padx=5, pady=5)
         self.purpose_var = tk.StringVar(value="")
-        purpose_list = ["Arbeit", "Dienstlich", "Ausbildung", "Einkauf", "Erledigung", "Freizeit", "Begleitung"]
+        purpose_list = [
+            "Arbeit", "Dienstlich", "Ausbildung",
+            "Einkauf", "Erledigung", "Freizeit", "Begleitung"
+        ]
         purpose_list_sorted = sorted(purpose_list, key=str.lower)
         self.purpose_box = ttk.Combobox(
             root,
@@ -212,37 +215,31 @@ class TrafficDiaryApp:
         )
         self.purpose_box.grid(row=8, column=1, padx=5, pady=5)
 
-        # Tooltip-Fenster für Wegezweck
+        # Tooltip-Wegezweck
         self.tooltip_window_purpose = None
-        self.question_mark_label_purpose = ttk.Label(root, text="❓", foreground="blue", cursor="hand2")
+        self.question_mark_label_purpose = ttk.Label(
+            root, text="❓", foreground="blue", cursor="hand2"
+        )
         self.question_mark_label_purpose.grid(row=8, column=2, padx=5, pady=5)
         self.question_mark_label_purpose.bind("<Enter>", self.show_purpose_tooltip)
         self.question_mark_label_purpose.bind("<Leave>", self.hide_purpose_tooltip)
 
-        # -----------------------------------
         # Zeile 9: Speichern-Button
-        # -----------------------------------
-        ttk.Button(root, text="Speichern", command=self.save_entry).grid(
-            row=9, column=0, columnspan=2, padx=5, pady=10
-        )
+        ttk.Button(
+            root, text="Speichern", command=self.save_entry
+        ).grid(row=9, column=0, columnspan=2, padx=5, pady=10)
 
-        # -----------------------------------
         # Zeile 10: Auswerten-Button
-        # -----------------------------------
-        ttk.Button(root, text="Jetzt auswerten", command=self.open_analysis_options).grid(
-            row=10, column=0, columnspan=2, padx=5, pady=10
-        )
+        ttk.Button(
+            root, text="Jetzt auswerten", command=self.open_analysis_options
+        ).grid(row=10, column=0, columnspan=2, padx=5, pady=10)
 
-        # -----------------------------------
         # Zeile 11: Zurücksetzen-Button
-        # -----------------------------------
-        ttk.Button(root, text="Zurücksetzen", command=self.reset_all).grid(
-            row=11, column=0, columnspan=2, padx=5, pady=10
-        )
+        ttk.Button(
+            root, text="Zurücksetzen", command=self.reset_all
+        ).grid(row=11, column=0, columnspan=2, padx=5, pady=10)
 
-        # -----------------------------------
         # Zeile 12: Meldungs-Label
-        # -----------------------------------
         self.message_label = ttk.Label(root, text="")
         self.message_label.grid(row=12, column=0, columnspan=3, padx=5, pady=5)
 
@@ -257,21 +254,14 @@ class TrafficDiaryApp:
         self.start_date_var.trace_add("write", self.clear_message)
         self.end_date_var.trace_add("write", self.clear_message)
 
-        # --- NEU ODER GEÄNDERT: Variablen für Analyse-Zeitraum
+        # Zusätzliche Variablen für den Analysezeitraum
         self.analysis_start_date_var = tk.StringVar()
         self.analysis_end_date_var = tk.StringVar()
-        # -----------------------------------------------------
 
-    # --------------------------------------------------
-    # NEU: Optionen-Fenster zum Auswählen, welche Benutzer
-    #      in die Auswertung einbezogen werden sollen,
-    #      UND zusätzlich ein Zeitraum (Start/Enddatum).
-    # --------------------------------------------------
+    # ------------- Methoden für die Analyse-Optionen -------------
     def open_analysis_options(self):
         """
-        Öffnet ein neues Toplevel-Fenster, in dem man auswählen kann,
-        welche Benutzer in die Analyse einfließen sollen.
-        Zusätzlich wird ein Start- und Enddatum für den Analyse-Zeitraum abgefragt.
+        Öffnet ein neues Fenster zur Auswahl der Benutzer/innen und des Analyse-Zeitraums.
         """
         options_window = tk.Toplevel(self.root)
         options_window.title("Auswertung anpassen")
@@ -280,7 +270,6 @@ class TrafficDiaryApp:
         checks_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
 
         tk.Label(checks_frame, text="Bitte Benutzer auswählen:").pack(anchor="w", pady=(0, 5))
-
         self.user_check_vars = {}
 
         if os.path.exists(USER_FILE):
@@ -294,10 +283,9 @@ class TrafficDiaryApp:
         else:
             tk.Label(checks_frame, text="Keine Benutzerdatei gefunden.").pack()
 
-        # --- NEU: Zeitraum-Frame
+        # Zeitraum-Frame
         period_frame = ttk.Frame(options_window)
         period_frame.pack(padx=10, pady=(0, 10), fill=tk.X, expand=True)
-
         tk.Label(period_frame, text="Analyse-Zeitraum auswählen:").pack(anchor="w", pady=(0, 5))
 
         # Startdatum
@@ -309,7 +297,9 @@ class TrafficDiaryApp:
         ttk.Button(
             start_frame,
             text="Wählen",
-            command=lambda: self.select_analysis_date(self.analysis_start_date_var, "Analyse-Startdatum")
+            command=lambda: self.select_analysis_date(
+                self.analysis_start_date_var, "Analyse-Startdatum"
+            ),
         ).pack(side=tk.LEFT)
 
         # Enddatum
@@ -321,9 +311,10 @@ class TrafficDiaryApp:
         ttk.Button(
             end_frame,
             text="Wählen",
-            command=lambda: self.select_analysis_date(self.analysis_end_date_var, "Analyse-Enddatum")
+            command=lambda: self.select_analysis_date(
+                self.analysis_end_date_var, "Analyse-Enddatum"
+            ),
         ).pack(side=tk.LEFT)
-        # --- Ende NEU
 
         btn_frame = ttk.Frame(options_window)
         btn_frame.pack(padx=10, pady=10, fill=tk.X)
@@ -333,15 +324,11 @@ class TrafficDiaryApp:
                 name for name, var_obj in self.user_check_vars.items() if var_obj.get()
             ]
             options_window.destroy()
-            # Übergabe der neuen Zeitraums-Felder
             self.analyze_data(selected_users)
 
         ttk.Button(btn_frame, text="Analyse starten", command=start_analysis).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="Abbrechen", command=options_window.destroy).pack(side=tk.LEFT, padx=5)
 
-    # --------------------------------------------------
-    # Datumsauswahl für den Analyse-Zeitraum
-    # --------------------------------------------------
     def select_analysis_date(self, variable, title):
         """
         Zeigt einen Kalender an und speichert das gewählte Datum in 'variable'.
@@ -358,76 +345,63 @@ class TrafficDiaryApp:
 
         cal.bind("<<CalendarSelected>>", on_date_selected)
 
-    # --------------------------------------------------
-    # Analyse und Diagramme (3 Diagramme; 2 nebeneinander, 1 darunter)
-    # + Anzeige der zusätzlichen Werte
-    # --------------------------------------------------
+    # ------------- Analyse und Diagrammerstellung -------------
     def analyze_data(self, selected_users=None):
         """
-        Führt die Datenanalyse durch.
-        selected_users: Liste von Benutzer-Namen, die ausgewertet werden sollen
-                        (z.B. ["Max Mustermann", "Lisa Müller", ...]).
-                        Ist None oder leer, werden alle Personen ausgewertet.
-
-        Berücksichtigt zusätzlich den Zeitraum:
-        - self.analysis_start_date_var und self.analysis_end_date_var
+        Führt die Datenanalyse durch und zeigt die Diagramme in einem Scroll-Fenster an.
+        - selected_users: Liste der ausgewählten Benutzer/innen.
+        - Zusätzlich wird der Zeitraum aus den Variablen analysis_start_date_var / analysis_end_date_var gelesen.
         """
         df = load_csv(DATA_FILE)
         if df is None or df.empty:
             handle_error("Keine Daten zum Auswerten vorhanden.", self.message_label)
             return
 
-        # --- NEU ODER GEÄNDERT: Umwandeln der Datumszeit-Spalten und Filtern nach Zeitraum
+        # Datums-Umwandlung und Filtern nach Zeitraum
         try:
             df["Startzeit_kombiniert"] = pd.to_datetime(df["Startzeit_kombiniert"], format="%d.%m.%Y %H:%M")
         except Exception as e:
             handle_error(f"Datum/Zeit-Umwandlung fehlgeschlagen: {e}", self.message_label)
             return
 
-        # 1) Zeitraum aus den analysis_*_date_var lesen
         analysis_start_str = self.analysis_start_date_var.get().strip()
         analysis_end_str = self.analysis_end_date_var.get().strip()
 
-        # Nur filtern, wenn tatsächlich beide Felder belegt sind
         if analysis_start_str and analysis_end_str:
             try:
                 analysis_start_dt = datetime.strptime(analysis_start_str, "%d.%m.%Y")
                 analysis_end_dt = datetime.strptime(analysis_end_str, "%d.%m.%Y")
-                # Ende des Tages: 23:59:59
                 analysis_end_dt = analysis_end_dt.replace(hour=23, minute=59, second=59)
 
-                # Filter: hier Beispiel, nur Startzeiten im Bereich
                 df = df[df["Startzeit_kombiniert"] >= analysis_start_dt]
                 df = df[df["Startzeit_kombiniert"] <= analysis_end_dt]
-
             except ValueError:
-                handle_error("Analyse-Zeitraum ungültig oder nicht vollständig.", self.message_label)
+                handle_error("Analyse-Zeitraum ungültig oder unvollständig.", self.message_label)
                 return
 
             if df.empty:
                 handle_error("Keine Einträge im ausgewählten Zeitraum gefunden.", self.message_label)
                 return
-        # --- Ende NEU
 
         df["Distanz (km)"] = pd.to_numeric(df["Distanz (km)"], errors="coerce")
 
-        # Benutzer-Filter
+        # Benutzerfilter
         if selected_users:
             df = df[df["Benutzer/in"].isin(selected_users)]
             if df.empty:
-                handle_error("Keine Einträge für die gewählten Benutzer/innen vorhanden.", self.message_label)
+                handle_error("Keine Einträge für die gewählten Benutzer/innen.", self.message_label)
                 return
 
         create_chart_directory()
 
-        # --- 1) Modal Split (Anzahl Wege in %) ---
+        # 1) Modal Split (Wege in %)
         color_map_mode = {
             "MIV": "red",
             "MIV-Mitfahrer": "orange",
             "Fuß": "lightskyblue",
             "Fahrrad": "darkblue",
             "ÖV": "green",
-            "Sonstiges": "pink"
+            "Sonstiges": "pink",
         }
         ways_by_mode_percent = df["Modus"].value_counts(normalize=True) * 100
         ways_modes = ways_by_mode_percent.index
@@ -440,7 +414,7 @@ class TrafficDiaryApp:
             labels=ways_modes,
             autopct="%.1f%%",
             startangle=140,
-            colors=ways_colors
+            colors=ways_colors,
         )
         plt.title("Modal Split Wege", fontsize=14, fontweight="bold")
         plt.figtext(0.5, 0.01, "Angaben in Prozent", ha="center", fontsize=10)
@@ -448,11 +422,11 @@ class TrafficDiaryApp:
         plt.savefig(ways_chart_path)
         plt.close()
 
-        # --- 2) Modal Split Personenkilometer ---
+        # 2) Modal Split Personenkilometer
         km_sum_by_mode = df.groupby("Modus")["Distanz (km)"].sum()
         total_km = km_sum_by_mode.sum()
         if total_km == 0:
-            handle_error("Keine Distanz vorhanden, Diagramm kann nicht erstellt werden.", self.message_label)
+            handle_error("Keine Distanz vorhanden, kein Diagramm möglich.", self.message_label)
             return
 
         km_by_mode_percent = (km_sum_by_mode / total_km) * 100
@@ -466,7 +440,7 @@ class TrafficDiaryApp:
             labels=km_modes,
             autopct="%.1f%%",
             startangle=140,
-            colors=km_colors
+            colors=km_colors,
         )
         plt.title("Modal Split Personenkilometer", fontsize=14, fontweight="bold")
         plt.figtext(0.5, 0.01, "Angaben in Prozent", ha="center", fontsize=10)
@@ -474,7 +448,7 @@ class TrafficDiaryApp:
         plt.savefig(km_chart_path)
         plt.close()
 
-        # --- 3) Verkehrsaufkommen (Wege) ---
+        # 3) Verkehrsaufkommen (Wege)
         color_map_purpose = {
             "Arbeit": "lightskyblue",
             "Dienstlich": "blue",
@@ -482,7 +456,7 @@ class TrafficDiaryApp:
             "Einkauf": "brown",
             "Erledigung": "red",
             "Freizeit": "yellow",
-            "Begleitung": "lightgreen"
+            "Begleitung": "lightgreen",
         }
         wegezweck_counts = df["Wegezweck"].value_counts(normalize=True) * 100
         wegezweck_list = wegezweck_counts.index
@@ -495,7 +469,7 @@ class TrafficDiaryApp:
             labels=wegezweck_list,
             autopct="%.1f%%",
             startangle=140,
-            colors=wegezweck_colors
+            colors=wegezweck_colors,
         )
         plt.title("Verkehrsaufkommen (Wege)", fontsize=14, fontweight="bold")
         plt.figtext(0.5, 0.01, "Angaben in Prozent", ha="center", fontsize=10)
@@ -503,9 +477,7 @@ class TrafficDiaryApp:
         plt.savefig(wegezweck_chart_path)
         plt.close()
 
-        # ---------------------------------------
-        # Scrollbares Fenster für die Diagramme
-        # ---------------------------------------
+        # Neues Fenster mit Scrollbar
         analysis_window = tk.Toplevel(self.root)
         analysis_window.title("Analyse Ergebnisse: Modal Split und Verkehrsaufkommen")
 
@@ -524,9 +496,11 @@ class TrafficDiaryApp:
 
         def on_frame_configure(event):
             canvas.configure(scrollregion=canvas.bbox("all"))
+
         diagrams_frame.bind("<Configure>", on_frame_configure)
 
         def _on_mousewheel(event):
+            """Ermöglicht das Scrollen per Mausrad (auch für Linux)."""
             if event.delta:  # Windows/Mac
                 canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
             else:  # Linux
@@ -539,46 +513,36 @@ class TrafficDiaryApp:
         diagrams_frame.bind("<Button-4>", _on_mousewheel)
         diagrams_frame.bind("<Button-5>", _on_mousewheel)
 
-        # ---------------------------------------
-        # Oberer Bereich (2 Diagramme nebeneinander)
-        # ---------------------------------------
+        # Oberer Bereich (zwei Diagramme nebeneinander)
         upper_frame = ttk.Frame(diagrams_frame)
-        # Bündig: gleicher Innenabstand links/rechts wie unten
         upper_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
         try:
-            # Modal Split Wege (links)
             ways_img = Image.open(ways_chart_path)
             ways_photo = ImageTk.PhotoImage(ways_img)
             ways_label = tk.Label(upper_frame, image=ways_photo)
             ways_label.image = ways_photo
-            ways_label.pack(side=tk.LEFT, anchor="n", padx=0)
+            ways_label.pack(side=tk.LEFT, anchor="n")
 
-            # Modal Split Personenkilometer (rechts)
             km_img = Image.open(km_chart_path)
             km_photo = ImageTk.PhotoImage(km_img)
             km_label = tk.Label(upper_frame, image=km_photo)
             km_label.image = km_photo
-            km_label.pack(side=tk.LEFT, anchor="n", padx=40)  # etwas Abstand nach rechts
+            km_label.pack(side=tk.LEFT, anchor="n", padx=40)
         except Exception as e:
             handle_error(f"Fehler beim Laden der Diagramme: {e}", self.message_label)
             return
 
-        # ---------------------------------------
-        # Unterer Bereich (Diagramm + Werte nebeneinander)
-        # ---------------------------------------
+        # Unterer Bereich (drittes Diagramm + Kennwerte)
         lower_frame = ttk.Frame(diagrams_frame)
         lower_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=10)
 
-        # Linke Spalte: Verkehrsaufkommen (Wege)
         lower_left_frame = ttk.Frame(lower_frame)
         lower_left_frame.pack(side=tk.LEFT, anchor="n")
 
-        # Rechte Spalte: Statistikwerte
         lower_right_frame = ttk.Frame(lower_frame)
         lower_right_frame.pack(side=tk.LEFT, anchor="n", padx=40)
 
-        # Verkehrsaufkommen (Wege)-Diagramm
         try:
             wz_img = Image.open(wegezweck_chart_path)
             wz_photo = ImageTk.PhotoImage(wz_img)
@@ -586,67 +550,62 @@ class TrafficDiaryApp:
             wz_label.image = wz_photo
             wz_label.pack(side=tk.TOP, anchor="n")
         except Exception as e:
-            handle_error(f"Fehler beim Laden des Diagramms 'Verkehrsaufkommen (Wege)': {e}", self.message_label)
+            handle_error(
+                f"Fehler beim Laden des Diagramms 'Verkehrsaufkommen (Wege)': {e}",
+                self.message_label
+            )
             return
 
-        # ---------------------------------------
-        # Statistikwerte (rechts neben dem Diagramm "Verkehrsaufkommen (Wege)")
-        # ---------------------------------------
-        # Anzahl der verschiedenen Tage in der Auswahl
+        # Statistikwerte berechnen und anzeigen
         day_count = df["Startzeit_kombiniert"].dt.date.nunique()
-        # Gesamtzahl an Wegen
         number_of_ways = len(df)
-        # Gesamtdistanz
         total_distance = df["Distanz (km)"].sum()
 
         if day_count > 0:
             avg_ways = number_of_ways / day_count
             avg_distance = total_distance / day_count
         else:
-            # Falls doch kein Tag vorhanden, zur Sicherheit abfangen
             avg_ways = 0
             avg_distance = 0
 
-        # Überschrift in schwarzer, fetter Schrift
         headline_label = ttk.Label(
             lower_right_frame,
             text="Durchschnittliche Tageswerte",
             font=("Helvetica", 14, "bold"),
             foreground="black"
         )
-        headline_label.pack(side=tk.TOP, padx=0, pady=(0, 10), anchor="w")
+        headline_label.pack(side=tk.TOP, pady=(0, 10), anchor="w")
 
-        # Durchschnittliche Wegeanzahl (normal, schwarz)
         label_avg_ways = ttk.Label(
             lower_right_frame,
             text=f"Durchschnittliche Wegeanzahl pro Tag: {avg_ways:.2f}",
             font=("Helvetica", 12),
             foreground="black"
         )
-        label_avg_ways.pack(side=tk.TOP, padx=0, pady=5, anchor="w")
+        label_avg_ways.pack(side=tk.TOP, pady=5, anchor="w")
 
-        # Durchschnittliche Distanz (normal, schwarz)
         label_avg_distance = ttk.Label(
             lower_right_frame,
             text=f"Durchschnittlich zurückgelegte Strecke (km/Tag): {avg_distance:.2f}",
             font=("Helvetica", 12),
             foreground="black"
         )
-        label_avg_distance.pack(side=tk.TOP, padx=0, pady=5, anchor="w")
+        label_avg_distance.pack(side=tk.TOP, pady=5, anchor="w")
 
         show_success("Auswertung erfolgreich abgeschlossen.", self.message_label)
 
-    # --------------------------------------------------
-    # Benutzer-Funktionen
-    # --------------------------------------------------
+    # ------------- Benutzer-Funktionen -------------
     def load_users(self):
-        self.user_menu['values'] = []
+        """Lädt vorhandene Benutzer/innen aus der CSV-Datei und füllt das Combobox-Menü."""
+        self.user_menu["values"] = []
         if os.path.exists(USER_FILE):
             users = pd.read_csv(USER_FILE)
             user_list = sorted(users["Vorname"] + " " + users["Nachname"])
-            self.user_menu['values'] = user_list
+            self.user_menu["values"] = user_list
 
     def add_new_user(self):
+        """Öffnet ein Fenster zum Anlegen eines neuen Benutzers/einer neuen Benutzerin."""
+
         def save_user(event=None):
             first_name = first_name_var.get().strip()
             last_name = last_name_var.get().strip()
@@ -660,7 +619,9 @@ class TrafficDiaryApp:
             if os.path.exists(USER_FILE):
                 existing_users = pd.read_csv(USER_FILE)
                 existing_full_names_lower = (
-                    existing_users["Vorname"].str.lower() + " " + existing_users["Nachname"].str.lower()
+                    existing_users["Vorname"].str.lower()
+                    + " "
+                    + existing_users["Nachname"].str.lower()
                 )
                 if user_full_name_lower in existing_full_names_lower.values:
                     handle_error("Benutzer/in bereits vorhanden.", message_label)
@@ -700,10 +661,9 @@ class TrafficDiaryApp:
         first_name_entry.focus()
         user_window.bind("<Return>", save_user)
 
-    # --------------------------------------------------
-    # Tooltip-Methoden für Verkehrsmittel / Wegezweck
-    # --------------------------------------------------
+    # ------------- Tooltip-Methoden für Verkehrsmittel / Wegezweck -------------
     def show_mode_tooltip(self, event):
+        """Zeigt einen Tooltip für Verkehrsmittel."""
         if self.tooltip_window_mode is not None:
             return
         self.tooltip_window_mode = tk.Toplevel(self.root)
@@ -716,21 +676,30 @@ class TrafficDiaryApp:
         table_frame = tk.Frame(self.tooltip_window_mode, background="white", relief="solid", borderwidth=1)
         table_frame.pack()
 
-        header_text = f"{'Verkehrsmittel':<15}{'Hierzu gehören':<40}"
-        header_label = tk.Label(table_frame, text=header_text, font=("Consolas", 10, "bold"),
-                                background="white", justify="left")
+        header_label = tk.Label(
+            table_frame,
+            text=f"{'Verkehrsmittel':<15}{'Hierzu gehören':<40}",
+            font=("Consolas", 10, "bold"),
+            background="white",
+            justify="left"
+        )
         header_label.pack(anchor="w", padx=5, pady=(5, 2))
 
         body_text = (
             f"{'Fahrrad':<15}Pedelecs, E-Bikes, Lastenräder, E-Scooter etc.\n"
             f"{'Fuß':<15}Fußbus\n"
             f"{'MIV':<15}Auto, Transporter etc.\n"
-            f"{'MIV-Mitfahrer':<15}Mitfahrten, Taxifahrten etc.\n"
-            f"{'Sonstiges':<15}Schiff, Flugzeug, Rakete etc.\n"
-            f"{'ÖV':<15}Nahverkehr (Bus, Straßenbahn, RB), Fernverkehr (ICE, TGV, Flixtrain, Westbahn, Fernbus) etc.\n"
+            f"{'MIV-Mitfahrer':<15}Mitfahrten, Taxi etc.\n"
+            f"{'Sonstiges':<15}Schiff, Flugzeug etc.\n"
+            f"{'ÖV':<15}Bus, Bahn (nah+fern), Fernbus etc.\n"
         )
-        body_label = tk.Label(table_frame, text=body_text, font=("Consolas", 10),
-                              background="white", justify="left")
+        body_label = tk.Label(
+            table_frame,
+            text=body_text,
+            font=("Consolas", 10),
+            background="white",
+            justify="left"
+        )
         body_label.pack(anchor="w", padx=5, pady=(0, 5))
 
     def hide_mode_tooltip(self, event):
@@ -739,6 +708,7 @@ class TrafficDiaryApp:
             self.tooltip_window_mode = None
 
     def show_purpose_tooltip(self, event):
+        """Zeigt einen Tooltip für Wegezweck."""
         if self.tooltip_window_purpose is not None:
             return
         self.tooltip_window_purpose = tk.Toplevel(self.root)
@@ -751,23 +721,32 @@ class TrafficDiaryApp:
         table_frame = tk.Frame(self.tooltip_window_purpose, background="white", relief="solid", borderwidth=1)
         table_frame.pack()
 
-        header_text = f"{'Wegezweck':<12}{'Beispiel'}"
-        header_label = tk.Label(table_frame, text=header_text, font=("Consolas", 10, "bold"),
-                                background="white", justify="left")
+        header_label = tk.Label(
+            table_frame,
+            text=f"{'Wegezweck':<12}{'Beispiel'}",
+            font=("Consolas", 10, "bold"),
+            background="white",
+            justify="left"
+        )
         header_label.pack(anchor="w", padx=5, pady=(5, 2))
 
         body_text = (
             f"{'Arbeit':<12}Weg zur Arbeitsstätte\n"
-            f"{'Ausbildung':<12}Universität, Schule etc.\n"
-            f"{'Begleitung':<12}Kind zur Schule bringen\n"
-            f"{'Dienstlich':<12}Dienstreise, Weg während der Arbeit\n"
+            f"{'Ausbildung':<12}Uni, Schule etc.\n"
+            f"{'Begleitung':<12}z.B. Kind bringen\n"
+            f"{'Dienstlich':<12}Dienstreise\n"
             f"{'Einkauf':<12}Supermarkt\n"
             f"{'Erledigung':<12}Arztbesuch\n"
-            f"{'Freizeit':<12}Nach Hause, Sport, Freunde etc.\n\n"
-            "Wege zurück nach Hause sind immer Freizeit-Wege!"
+            f"{'Freizeit':<12}Sport, Freunde etc.\n\n"
+            "Wege zurück nach Hause zählen als Freizeit!"
         )
-        body_label = tk.Label(table_frame, text=body_text, font=("Consolas", 10),
-                              background="white", justify="left")
+        body_label = tk.Label(
+            table_frame,
+            text=body_text,
+            font=("Consolas", 10),
+            background="white",
+            justify="left"
+        )
         body_label.pack(anchor="w", padx=5, pady=(0, 5))
 
     def hide_purpose_tooltip(self, event):
@@ -775,9 +754,7 @@ class TrafficDiaryApp:
             self.tooltip_window_purpose.destroy()
             self.tooltip_window_purpose = None
 
-    # --------------------------------------------------
-    # Methoden für Kalender/Uhrzeit (Wege-Eintrag)
-    # --------------------------------------------------
+    # ------------- Datum- und Uhrzeitauswahl -------------
     def select_start_date(self):
         self.select_date(self.start_date_var, "Startdatum")
 
@@ -785,6 +762,7 @@ class TrafficDiaryApp:
         self.select_date(self.end_date_var, "Enddatum")
 
     def select_date(self, variable, title):
+        """Allgemeiner Kalenderdialog für Datumsauswahl."""
         top = tk.Toplevel(self.root)
         top.title(title)
         cal = Calendar(top, selectmode="day", date_pattern="dd.mm.yyyy")
@@ -804,6 +782,7 @@ class TrafficDiaryApp:
         self.select_time(self.end_time_var, "Endzeit")
 
     def select_time(self, variable, title):
+        """Allgemeiner Dialog zum Eingeben einer Uhrzeit (HH:MM)."""
         top = tk.Toplevel(self.root)
         top.title(title)
 
@@ -844,16 +823,10 @@ class TrafficDiaryApp:
             top.destroy()
 
         top.bind("<Return>", confirm_time)
-
-        ttk.Button(time_frame, text="OK", command=confirm_time).grid(
-            row=1, column=0, columnspan=5, pady=8
-        )
-
+        ttk.Button(time_frame, text="OK", command=confirm_time).grid(row=1, column=0, columnspan=5, pady=8)
         hour_entry.focus()
 
-    # --------------------------------------------------
-    # Karte
-    # --------------------------------------------------
+    # ------------- Kartenfunktionen -------------
     def open_map_for_startpoint(self, event=None):
         self.open_map_generic(
             var_name="start_point",
@@ -869,6 +842,10 @@ class TrafficDiaryApp:
         )
 
     def open_map_generic(self, var_name, window_title, confirm_btn_text):
+        """
+        Öffnet eine Karte, um Koordinaten (Marker) festzulegen.
+        var_name: "start_point" oder "end_point"
+        """
         map_window = tk.Toplevel(self.root)
         map_window.title(window_title)
 
@@ -888,7 +865,7 @@ class TrafficDiaryApp:
             if not query:
                 return
             if marker is not None:
-                handle_error("Ein Marker existiert bereits. Bitte 'Marker zurücksetzen'.", self.message_label)
+                handle_error("Es ist bereits ein Marker vorhanden. Bitte zurücksetzen.", self.message_label)
                 return
             try:
                 loc = geolocator.geocode(query)
@@ -911,7 +888,8 @@ class TrafficDiaryApp:
 
         map_widget = TkinterMapView(map_window, width=800, height=600, corner_radius=0)
         map_widget.set_tile_server(
-            f"https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{{z}}/{{x}}/{{y}}?access_token={MAPBOX_API_KEY}",
+            f"https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/"
+            f"{{z}}/{{x}}/{{y}}?access_token={MAPBOX_API_KEY}",
             tile_size=512,
             max_zoom=19
         )
@@ -919,7 +897,6 @@ class TrafficDiaryApp:
         karlsruhe_lat, karlsruhe_lon = 49.00937, 8.40444
         map_widget.set_position(karlsruhe_lat, karlsruhe_lon)
         map_widget.set_zoom(12)
-
         marker = None
 
         def disable_left_click():
@@ -931,7 +908,7 @@ class TrafficDiaryApp:
         def on_map_click(coordinate):
             nonlocal marker
             if marker is not None:
-                handle_error("Ein Marker existiert bereits. Bitte 'Marker zurücksetzen'.", self.message_label)
+                handle_error("Es ist bereits ein Marker vorhanden. Bitte zurücksetzen.", self.message_label)
                 return
             lat, lon = coordinate
             marker = map_widget.set_marker(lat, lon, text="")
@@ -957,18 +934,29 @@ class TrafficDiaryApp:
                     self.end_point_var.set(coord_str)
             map_window.destroy()
 
-        reset_btn = ttk.Button(action_frame, text="Marker zurücksetzen", command=reset_marker, style="BigButton.TButton")
+        reset_btn = ttk.Button(
+            action_frame,
+            text="Marker zurücksetzen",
+            command=reset_marker,
+            style="BigButton.TButton"
+        )
         reset_btn.pack(side=tk.LEFT, padx=10)
 
-        confirm_btn = ttk.Button(action_frame, text=confirm_btn_text, command=confirm_selection, style="BigButton.TButton")
+        confirm_btn = ttk.Button(
+            action_frame,
+            text=confirm_btn_text,
+            command=confirm_selection,
+            style="BigButton.TButton"
+        )
         confirm_btn.pack(side=tk.RIGHT, padx=10)
 
         map_widget.pack(fill=tk.BOTH, expand=True)
 
-    # --------------------------------------------------
-    # Speichern, Zurücksetzen usw.
-    # --------------------------------------------------
+    # ------------- Speichern und Zurücksetzen -------------
     def save_entry(self):
+        """
+        Liest alle Eingabefelder aus, berechnet Distanz und speichert den Eintrag in einer CSV-Datei.
+        """
         user = self.user_var.get()
         start_date = self.start_date_var.get()
         end_date = self.end_date_var.get()
@@ -990,12 +978,13 @@ class TrafficDiaryApp:
             start_dt = datetime.strptime(start_datetime_str, "%d.%m.%Y %H:%M")
             end_dt = datetime.strptime(end_datetime_str, "%d.%m.%Y %H:%M")
         except ValueError:
-            handle_error("Datum/Zeit-Format ist ungültig. Bitte Format TT.MM.YYYY HH:MM verwenden.", self.message_label)
+            handle_error("Datum/Zeit-Format ungültig (TT.MM.YYYY HH:MM).", self.message_label)
             return
 
         if end_dt < start_dt:
             handle_error(
-                "Enddatum/-zeit liegt vor Startdatum/-zeit. Bitte prüfen, ob das Enddatum evtl. am Folgetag angegeben ist.",
+                "Enddatum/-zeit liegt vor Startdatum/-zeit. "
+                "Bei Folgetagen bitte das Datum entsprechend anpassen.",
                 self.message_label
             )
             return
@@ -1020,11 +1009,11 @@ class TrafficDiaryApp:
             "Wegezweck": purpose,
         }
         save_to_csv(entry, DATA_FILE)
-
         show_success("Der Eintrag wurde erfolgreich abgespeichert.", self.message_label)
         self.clear_fields()
 
     def clear_fields(self):
+        """Setzt die Eingabefelder zurück."""
         self.user_menu.set("")
         self.start_date_var.set("")
         self.end_date_var.set("")
@@ -1036,22 +1025,19 @@ class TrafficDiaryApp:
         self.purpose_var.set("")
 
     def clear_message(self, *args):
+        """Löscht die Meldung im Label (wird bei Änderung eines Feldes aufgerufen)."""
         self.message_label.config(text="")
 
     def reset_all(self):
         """
-        Setzt alle Felder zurück und entfernt (falls vorhanden) die User- und Daten-Dateien.
-        Zusätzlich werden alle Dateien im Ordner "charts" gelöscht, der Ordner selbst bleibt aber bestehen.
+        Setzt alle Eingabefelder zurück und löscht die User-/Daten-CSV-Dateien.
+        Alle Dateien im CHART_DIRECTORY werden ebenfalls gelöscht.
         """
         self.user_menu.set("")
-        
-        # USER_FILE und DATA_FILE löschen
         if os.path.exists(USER_FILE):
             os.remove(USER_FILE)
         if os.path.exists(DATA_FILE):
             os.remove(DATA_FILE)
-        
-        # Alle Dateien im Ordner CHART_DIRECTORY löschen
         if os.path.exists(CHART_DIRECTORY):
             for filename in os.listdir(CHART_DIRECTORY):
                 file_path = os.path.join(CHART_DIRECTORY, filename)
@@ -1059,15 +1045,13 @@ class TrafficDiaryApp:
                     try:
                         os.remove(file_path)
                     except:
-                        pass  # Fehler beim Löschen ignorieren
-        
+                        pass
         self.load_users()
         self.clear_fields()
         self.message_label.config(text="")
 
-# --------------------------------------------------
-# Hauptprogramm starten
-# --------------------------------------------------
+
+# Hauptprogramm
 if __name__ == "__main__":
     root = tk.Tk()
     app = TrafficDiaryApp(root)
