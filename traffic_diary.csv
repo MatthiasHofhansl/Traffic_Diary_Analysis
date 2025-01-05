@@ -1,2 +1,7 @@
 Benutzer/in,Startdatum,Startzeit,Enddatum,Endzeit,Startzeit_kombiniert,Endzeit_kombiniert,Startpunkt,Endpunkt,Distanz (km),Modus,Wegezweck
+<<<<<<< HEAD
 Max Mustermann,05.01.2025,08:12,05.01.2025,08:40,05.01.2025 08:12,05.01.2025 08:40,"49.00678, 8.43019","49.00847, 8.38350",3.421035985146915,MIV,Freizeit
+=======
+Paul Rösch,05.01.2025,12:00,05.01.2025,12:30,05.01.2025 12:00,05.01.2025 12:30,"49.02558, 8.36719","49.02356, 8.40084",2.4712511073287007,Fuß,Begleitung
+Paul Rösch,02.01.2025,23:00,03.01.2025,04:11,02.01.2025 23:00,03.01.2025 04:11,"49.03436, 8.39431","48.99090, 8.36127",5.403841136743447,Sonstiges,Begleitung
+>>>>>>> 01d6e03d685c742710f4af36df460de1bfeb3c02
