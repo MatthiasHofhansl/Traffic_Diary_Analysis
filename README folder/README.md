@@ -3,11 +3,12 @@
 ## Descriptions
 The **Traffic_Diary_Analysis_Tool** is a Python-based program designed to save and analyze travel routes taken by individuals. Users can input details about their journeys, such as:
 
+- **Participant Name** (selectable via a dropdown list with the option to create a new name)
+- **Start Date** and **End Date**
 - **Start Time** and **End Time**
 - **Start Point** and **End Point** (using coordinates obtained from Mapbox Geocoder)
 - **Mode of Transport** (selectable via a dropdown list)
 - **Purpose of Travel** (selectable via a dropdown list)
-- **Participant Name** (selectable via a dropdown list with the option to create a new name; every name has an own ID)
 
 The collected data can be reviewed in simple charts.
 
