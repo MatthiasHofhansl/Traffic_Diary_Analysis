@@ -11,10 +11,7 @@ DATA_FILE = "traffic_diary.csv"
 USER_FILE = "users.csv"
 CHART_DIRECTORY = "charts"
 
-MAPBOX_API_KEY = (
-    "pk.eyJ1IjoibWF0dGhpYXNoZmwiLCJhIjoiY201ZWI5dzBkMjU2MjJ1czc2ZTI0OTlnNyJ9."
-    "6DFtWqtEQp5ufQeodVZ5dQ"
-)
+MAPBOX_API_KEY = "pk.eyJ1IjoibWF0dGhpYXNoZmwiLCJhIjoiY201ZWI5dzBkMjU2MjJ1czc2ZTI0OTlnNyJ9.6DFtWqtEQp5ufQeodVZ5dQ"
 
 # Create a global Geolocator-Objekt
 geolocator = MapBox(api_key=MAPBOX_API_KEY)
