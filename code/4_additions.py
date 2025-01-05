@@ -360,6 +360,7 @@ class TrafficDiaryApp:
 
     # --------------------------------------------------
     # Analyse und Diagramme (3 Diagramme; 2 nebeneinander, 1 darunter)
+    # + Anzeige der zusätzlichen Werte
     # --------------------------------------------------
     def analyze_data(self, selected_users=None):
         """
@@ -572,6 +573,39 @@ class TrafficDiaryApp:
         except Exception as e:
             handle_error(f"Fehler beim Laden der Diagramme: {e}", self.message_label)
             return
+
+        # ---------------------------------------
+        # NEU: Anzeige der durchschnittlichen Werte
+        # ---------------------------------------
+        # Anzahl der verschiedenen Tage in der Auswahl
+        day_count = df["Startzeit_kombiniert"].dt.date.nunique()
+        # Gesamtzahl an Wegen
+        number_of_ways = len(df)
+        # Gesamtdistanz
+        total_distance = df["Distanz (km)"].sum()
+
+        if day_count > 0:
+            avg_ways = number_of_ways / day_count
+            avg_distance = total_distance / day_count
+        else:
+            # Falls doch kein Tag vorhanden, zur Sicherheit abfangen
+            avg_ways = 0
+            avg_distance = 0
+
+        stats_frame = ttk.Frame(diagrams_frame)
+        stats_frame.pack(side=tk.TOP, fill=tk.X, pady=10)
+
+        label_avg_ways = ttk.Label(
+            stats_frame,
+            text=f"Durchschnittliche Wegeanzahl pro Tag: {avg_ways:.2f}"
+        )
+        label_avg_ways.pack(side=tk.TOP, padx=10, pady=5, anchor="w")
+
+        label_avg_distance = ttk.Label(
+            stats_frame,
+            text=f"Durchschnittlich zurückgelegte Strecke in Kilometern pro Tag: {avg_distance:.2f}"
+        )
+        label_avg_distance.pack(side=tk.TOP, padx=10, pady=5, anchor="w")
 
         show_success("Auswertung erfolgreich abgeschlossen.", self.message_label)
 
