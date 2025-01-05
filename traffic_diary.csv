@@ -1,0 +1,4 @@
+Benutzer/in,Startdatum,Startzeit,Enddatum,Endzeit,Startzeit_kombiniert,Endzeit_kombiniert,Startpunkt,Endpunkt,Distanz (km),Modus,Wegezweck
+Paul Rösch,01.01.2025,16:00,01.01.2025,17:01,01.01.2025 16:00,01.01.2025 17:01,"48.77640, 9.13297","49.00999, 8.38633",60.59942571635581,MIV-Mitfahrer,Freizeit
+Paul Rösch,04.01.2025,11:12,04.01.2025,11:21,04.01.2025 11:12,04.01.2025 11:21,"49.01173, 8.36307","49.00989, 8.39349",2.2347920998258113,ÖV,Ausbildung
+Rainer Winckler,03.01.2025,22:00,04.01.2025,13:00,03.01.2025 22:00,04.01.2025 13:00,"49.11897, 11.54495","49.01173, 8.38686",231.0717714527764,Fahrrad,Einkauf
