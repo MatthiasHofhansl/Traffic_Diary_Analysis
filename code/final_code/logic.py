@@ -1,4 +1,4 @@
-# logic.py
+# This module handles data processing, CSV operations and geocoding logic.
 
 import os
 import pandas as pd
@@ -6,7 +6,7 @@ from geopy.distance import geodesic
 from geopy.geocoders import MapBox
 from datetime import datetime
 
-# ------------------ Globale Konstanten ------------------
+# global constants
 DATA_FILE = "traffic_diary.csv"
 USER_FILE = "users.csv"
 CHART_DIRECTORY = "charts"
@@ -16,7 +16,7 @@ MAPBOX_API_KEY = (
     "6DFtWqtEQp5ufQeodVZ5dQ"
 )
 
-# Erzeuge ein globales Geolocator-Objekt
+# Create a global Geolocator-Objekt
 geolocator = MapBox(api_key=MAPBOX_API_KEY)
 
 

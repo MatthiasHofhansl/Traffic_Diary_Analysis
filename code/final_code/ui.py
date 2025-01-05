@@ -1,4 +1,5 @@
-# ui.py
+# This module is the core of our application.
+# It manages the graphical user interface, data entry, tooltips and map interactions via Tkinter.
 
 import pandas as pd
 import os
