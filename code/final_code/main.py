@@ -1,5 +1,4 @@
 # This module starts our application.
-
 # Make you sure you executed the command "pip install tkcalendar geopy matplotlib seaborn Pillow tkintermapview" 
 # to make sure the application is able to work.
 
