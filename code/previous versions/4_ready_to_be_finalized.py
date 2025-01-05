@@ -1,4 +1,4 @@
-#Bibliotheken importieren
+#Bibliotheken importieren 
 import os
 import tkinter as tk
 from tkinter import ttk, messagebox
