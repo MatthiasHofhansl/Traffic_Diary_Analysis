@@ -584,7 +584,7 @@ class TrafficDiaryApp:
             f"{'MIV':<15}Auto, Transporter etc.\n"
             f"{'MIV-Mitfahrer':<15}Mitfahrten, Taxifahrten etc.\n"
             f"{'Sonstiges':<15}Schiff, Flugzeug, Rakete etc.\n"
-            f"{'ÖV':<15}Nahverkehr (Bust, Straßenbahn, RB), Fernverkehr (ICE, TGV, Flixtrain, Westbahn, Fernbus) etc.\n"
+            f"{'ÖV':<15}Nahverkehr (Bus, Straßenbahn, RB), Fernverkehr (ICE, TGV, Flixtrain, Westbahn, Fernbus) etc.\n"
         )
         body_label = tk.Label(
             table_frame,
